@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Budy Play</title>
+<style>
+  :root { --bg:#0b0b0c; --card:#161718; --line:#26282a; --neon:#39ff14; --text:#fff; --muted:#9a9ea3; }
+  * { box-sizing:border-box; margin:0; padding:0; }
+  body { background:var(--bg); color:var(--text); font-family:system-ui,sans-serif; line-height:1.4; }
+  header { padding:16px; border-bottom:1px solid var(--line); display:flex; justify-content:space-between; align-items:center; }
+  .logo { font-size:1.4rem; font-weight:800; }
+  .logo span { color:var(--neon); }
+  main { max-width:960px; margin:0 auto; padding:20px 16px 40px; }
+  h1 { font-size:1.6rem; margin-bottom:6px; }
+  p.sub { color:var(--muted); margin-bottom:20px; }
+  .grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(150px,1fr)); gap:12px; }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:12px; padding:14px; }
+  .card h2 { font-size:1rem; margin-bottom:6px; }
+  .badge { font-size:.7rem; color:var(--neon); border:1px solid var(--neon); border-radius:20px; padding:2px 8px; }
+</style>
+</head>
+<body>
+<header>
+  <div class="logo">Budy <span>Play</span></div>
+</header>
+<main>
+  <h1>Bienvenue sur Budy Play</h1>
+  <p class="sub">La plateforme communautaire de jeux vidéo. En construction.</p>
+  <div class="grid">
+    <div class="card"><h2>Boutique</h2><span class="badge">Bientôt</span></div>
+    <div class="card"><h2>Jeux</h2><span class="badge">Bientôt</span></div>
+    <div class="card"><h2>Messages</h2><span class="badge">Bientôt</span></div>
+    <div class="card"><h2>WhatsApp et appels</h2><span class="badge">Bientôt</span></div>
+    <div class="card"><h2>Réunions</h2><span class="badge">Bientôt</span></div>
+    <div class="card"><h2>Compétitions</h2><span class="badge">Bientôt</span></div>
+    <div class="card"><h2>Comptes et profils</h2><span class="badge">Bientôt</span></div>
+    <div class="card"><h2>Notifications</h2><span class="badge">Bientôt</span></div>
+  </div>
+</main>
+</body>
+</html>
