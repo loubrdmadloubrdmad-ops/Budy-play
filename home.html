@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Budy Play - Plateforme de Jeux</title>
+<style>
+  :root { --bg:#0b0b0c; --card:#161718; --line:#26282a; --neon:#39ff14; --text:#fff; --muted:#9a9ea3; }
+  * { box-sizing:border-box; margin:0; padding:0; }
+  body { background:var(--bg); color:var(--text); font-family:system-ui,sans-serif; line-height:1.4; }
+  header { display:flex; justify-content:space-between; align-items:center; padding:16px; border-bottom:1px solid var(--line); }
+  header a.logo { color:var(--text); text-decoration:none; font-size:1.4rem; font-weight:800; }
+  header span { color:var(--neon); }
+  .btn-account { padding:8px 14px; border-radius:8px; border:1px solid var(--neon); background:transparent; color:var(--neon); font-weight:700; text-decoration:none; font-size:0.9rem; }
+  main { max-width:420px; margin:0 auto; padding:20px 16px 40px; }
+  .hero { text-align:center; margin-bottom:24px; padding:20px 10px; }
+  .hero h1 { font-size:1.8rem; margin-bottom:8px; }
+  .hero h1 span { color:var(--neon); }
+  .hero p { color:var(--muted); font-size:0.95rem; }
+  h2 { font-size:1.2rem; margin-bottom:12px; }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:12px; padding:16px; margin-bottom:16px; display:flex; flex-direction:column; gap:8px; }
+  .card h3 { font-size:1.1rem; color:var(--text); }
+  .card p { color:var(--muted); font-size:0.9rem; }
+  .btn-play { margin-top:8px; padding:10px; border:0; border-radius:8px; background:var(--neon); color:#000; font-weight:700; font-size:0.95rem; text-align:center; text-decoration:none; display:block; }
+  #user-status { margin-bottom:20px; font-size:0.9rem; color:var(--muted); text-align:center; }
+  #user-status b { color:var(--neon); }
+</style>
+</head>
+<body>
+<header>
+  <a href="index.html" class="logo">Budy <span>Play</span></a>
+  <a href="compte.html" class="btn-account" id="account-link">Mon Compte</a>
+</header>
+
+<main>
+  <div class="hero">
+    <h1>Bienvenue sur <span>Budy Play</span></h1>
+    <p>Ta nouvelle plateforme de jeux mobile, rapide et stylée.</p>
+  </div>
+
+  <div id="user-status">Chargement du profil...</div>
+
+  <h2>Jeux Populaires</h2>
+  
+  <div class="card">
+    <h3>Cyber Runner</h3>
+    <p>Cours, saute et évite les obstacles dans un univers futuriste ultra rapide.</p>
+    <a href="#" class="btn-play">Jouer</a>
+  </div>
+
+  <div class="card">
+    <h3>Neon Clash</h3>
+    <p>Affronte d'autres joueurs dans des arènes sombres aux éclats fluorescents.</p>
+    <a href="#" class="btn-play">Jouer</a>
+  </div>
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="config.js"></script>
+<script>
+(function () {
+  var cfg = window.BUDY_CONFIG;
+  var statusEl = document.getElementById("user-status");
+  var accountLink = document.getElementById("account-link");
+
+  if (!cfg || !window.supabase) {
+    statusEl.textContent = "Mode invité (configuration absente)";
+    return;
+  }
+
+  var db = window.supabase.createClient(cfg.SUPABASE_URL, cfg.SUPABASE_KEY);
+
+  db.auth.getSession().then(async function (r) {
+    var session = r.data && r.data.session;
+    if (session) {
+      var user = session.user;
+      var res = await db.from("profiles").select("username, budy_id").eq("id", user.id).maybeSingle();
+      if (res.data && res.data.username) {
+        statusEl.innerHTML = "Connecté en tant que <b>" + res.data.username + "</b> (ID: " + res.data.budy_id + ")";
+        accountLink.textContent = "Profil";
+      } else {
+        statusEl.innerHTML = "Connecté (Profil en cours...)";
+      }
+    } else {
+      statusEl.innerHTML = "Tu n'es pas connecté. <a href='compte.html' style='color:var(--neon);text-decoration:none;'>Se connecter</a>";
+    }
+  });
+})();
+</script>
+</body>
+</html>
+￼Enter
