@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Compte - Budy Play</title>
+<style>
+  :root { --bg:#0b0b0c; --card:#161718; --line:#26282a; --neon:#39ff14; --text:#fff; --muted:#9a9ea3; --err:#ff5a5a; }
+  * { box-sizing:border-box; margin:0; padding:0; }
+  body { background:var(--bg); color:var(--text); font-family:system-ui,sans-serif; line-height:1.4; }
+  header { padding:16px; border-bottom:1px solid var(--line); }
+  header a { color:var(--text); text-decoration:none; font-size:1.4rem; font-weight:800; }
+  header span { color:var(--neon); }
+  main { max-width:420px; margin:0 auto; padding:20px 16px 40px; }
+  h1 { font-size:1.5rem; margin-bottom:14px; }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:12px; padding:16px; margin-bottom:16px; }
+  .tabs { display:flex; gap:8px; margin-bottom:6px; }
+  .tabs button { flex:1; padding:10px; border-radius:10px; border:1px solid var(--line); background:var(--card); color:var(--text); font-size:1rem; }
+  .tabs button.on { border-color:var(--neon); color:var(--neon); }
+  label { display:block; margin:12px 0 4px; color:var(--muted); font-size:.9rem; }
+  input { width:100%; padding:12px; border-radius:10px; border:1px solid var(--line); background:#0b0b0c; color:var(--text); font-size:1rem; }
+  input:focus { outline:none; border-color:var(--neon); }
+  .btn { width:100%; margin-top:16px; padding:12px; border:0; border-radius:10px; background:var(--neon); color:#000; font-weight:700; font-size:1rem; }
+  .btn.sec { background:transparent; border:1px solid var(--line); color:var(--text); }
+  .btn:disabled { opacity:.5; }
+  #msg, #msg2 { margin-top:12px; min-height:1.2em; font-size:.95rem; }
+  .err { color:var(--err); }
+  .ok { color:var(--neon); }
+  .row { display:flex; justify-content:space-between; gap:12px; padding:8px 0; border-bottom:1px solid var(--line); }
+  .row:last-child { border-bottom:0; }
+  .row b { color:var(--neon); text-align:right; word-break:break-all; }
+  .hidden { display:none; }
+</style>
+</head>
+<body>
+<header><a href="index.html">Budy <span>Play</span></a></header>
+<main>
+  <div id="auth">
+    <h1>Compte</h1>
+    <div class="card">
+      <div class="tabs">
+        <button id="tab-in" class="on" type="button">Connexion</button>
+        <button id="tab-up" type="button">Inscription</button>
+      </div>
+      <form id="form" novalidate>
+        <div id="username-wrap" class="hidden">
+          <label for="username">Nom d'utilisateur (3 à 20 : lettres, chiffres, _)</label>
+          <input id="username" autocomplete="username" maxlength="20">
+        </div>
+        <label for="email">E-mail</label>
+        <input id="email" type="email" autocomplete="email">
+        <label for="password">Mot de passe (8 caractères minimum)</label>
+        <input id="password" type="password" autocomplete="current-password">
+        <button class="btn" id="submit" type="submit">Se connecter</button>
+      </form>
+      <p id="msg"></p>
+    </div>
+  </div>
+
+  <div id="profile" class="hidden">
+    <h1>Mon profil</h1>
+    <div class="card">
+      <div class="row"><span>Nom d'utilisateur</span><b id="p-username"></b></div>
+      <div class="row"><span>Budy ID</span><b id="p-budy"></b></div>
+      <div class="row"><span>Rôle</span><b id="p-role"></b></div>
+      <div class="row"><span>E-mail</span><b id="p-email"></b></div>
+    </div>
+    <button class="btn sec" id="logout" type="button">Se déconnecter</button>
+    <p id="msg2"></p>
+  </div>
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="config.js"></script>
+<script>
+(function () {
+  var cfg = window.BUDY_CONFIG;
+  var $ = function (id) { return document.getElementById(id); };
+  function show(text, kind) { $("msg").textContent = text || ""; $("msg").className = kind || ""; }
+
+  if (!cfg || !window.supabase) {
+    show("Erreur : la configuration du site n'a pas pu être chargée.", "err");
+    return;
+  }
+
+  var db = window.supabase.createClient(cfg.SUPABASE_URL, cfg.SUPABASE_KEY);
+  var mode = "in";
+  var ROLES = { member: "Membre", moderator: "Modérateur", founder: "Fondateur" };
+
+  function setMode(m) {
+    mode = m;
+    $("tab-in").className = m === "in" ? "on" : "";
+    $("tab-up").className = m === "up" ? "on" : "";
+    $("username-wrap").className = m === "up" ? "" : "hidden";
+    $("submit").textContent = m === "up" ? "Créer mon compte" : "Se connecter";
+    $("password").setAttribute("autocomplete", m === "up" ? "new-password" : "current-password");
+    show("");
+  }
+  $("tab-in").onclick = function () { setMode("in"); };
+  $("tab-up").onclick = function () { setMode("up"); };
+
+  function frError(e) {
+    var m = ((e && e.message) || "").toLowerCase();
+    if (m.indexOf("invalid login") > -1) return "E-mail ou mot de passe incorrect.";
+    if (m.indexOf("not confirmed") > -1) return "Confirme d'abord ton e-mail (regarde ta boîte de réception).";
+    if (m.indexOf("already registered") > -1) return "Cet e-mail a déjà un compte.";
+    if (m.indexOf("database error") > -1 || m.indexOf("username") > -1) return "Ce nom d'utilisateur n'est pas valide ou est déjà pris.";
+    if (m.indexOf("rate limit") > -1) return "Trop d'essais. Réessaie dans quelques minutes.";
+    return "Une erreur est survenue : " + ((e && e.message) || "inconnue");
+  }
+
+  function showAuth() {
+    $("profile").className = "hidden";
+    $("auth").className = "";
+    $("password").value = "";
+    setMode("in");
+  }
+
+  async function showProfile(user) {
+    $("auth").className = "hidden";
+    $("profile").className = "";
+    $("msg2").textContent = "";
+    $("p-email").textContent = user.email || "";
+    $("p-username").textContent = "...";
+    $("p-budy").textContent = "...";
+    $("p-role").textContent = "...";
+    var res = await db.from("profiles").select("username,budy_id,role").eq("id", user.id).maybeSingle();
+    if (res.error || !res.data) {
+      $("p-username").textContent = "-";
+      $("p-budy").textContent = "-";
+      $("p-role").textContent = "-";
+      $("msg2").textContent = "Ton profil n'a pas pu être chargé pour le moment.";
+      return;
+    }
+    $("p-username").textContent = res.data.username;
+    $("p-budy").textContent = String(res.data.budy_id);
+    $("p-role").textContent = ROLES[res.data.role] || res.data.role;
+  }
+
+  $("form").onsubmit = async function (ev) {
+    ev.preventDefault();
+    var email = $("email").value.trim();
+    var password = $("password").value;
+    var username = $("username").value.trim();
+
+    if (!email || !password) { show("Écris ton e-mail et ton mot de passe.", "err"); return; }
+    if (mode === "up") {
+      if (!/^[A-Za-z0-9_]{3,20}$/.test(username)) {
+        show("Le nom d'utilisateur doit avoir 3 à 20 caractères : lettres, chiffres ou _.", "err");
+        return;
+      }
+      if (password.length < 8) { show("Le mot de passe doit avoir au moins 8 caractères.", "err"); return; }
+    }
+
+    $("submit").disabled = true;
+    show("Un instant...");
+    try {
+      if (mode === "up") {
+        var r = await db.auth.signUp({ email: email, password: password, options: { data: { username: username } } });
+        if (r.error) throw r.error;
+        if (r.data && r.data.session) {
+          await showProfile(r.data.user);
+        } else {
+          setMode("in");
+          show("Compte créé. Vérifie ta boîte e-mail pour confirmer ton compte, puis connecte-toi.", "ok");
+        }
+      } else {
+        var r2 = await db.auth.signInWithPassword({ email: email, password: password });
+        if (r2.error) throw r2.error;
+        await showProfile(r2.data.user);
+      }
+    } catch (e) {
+      show(frError(e), "err");
+    }
+    $("submit").disabled = false;
+  };
+
+  $("logout").onclick = async function () {
+    await db.auth.signOut();
+    showAuth();
+  };
+
+  db.auth.getSession().then(function (r) {
+    if (r.data && r.data.session) { showProfile(r.data.session.user); }
+  });
+})();
+</script>
+</body>
+  </html>
