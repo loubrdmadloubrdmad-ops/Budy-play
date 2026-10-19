@@ -1,370 +1,84 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-    <title>Budy Play | Catalogue des jeux</title>
-
-    <meta
-        name="description"
-        content="Découvrez les jeux disponibles dans la communauté Budy Play."
-    >
-
-    <style>
-        :root {
-            --background: #080c0a;
-            --card-background: #111815;
-            --green: #00ff66;
-            --text: #ffffff;
-            --muted: #a0aea6;
-            --border: rgba(0, 255, 102, 0.25);
-        }
-
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-        }
-
-        body {
-            min-height: 100vh;
-            display: flex;
-            flex-direction: column;
-            background: var(--background);
-            color: var(--text);
-            font-family: Arial, Helvetica, sans-serif;
-        }
-
-        a {
-            color: inherit;
-        }
-
-        header {
-            position: sticky;
-            top: 0;
-            z-index: 10;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            gap: 16px;
-            padding: 18px 5%;
-            background: #080c0af5;
-            border-bottom: 1px solid var(--border);
-        }
-
-        .logo {
-            color: var(--green);
-            font-size: 23px;
-            font-weight: 800;
-            text-decoration: none;
-            letter-spacing: 1px;
-        }
-
-        nav {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 18px;
-        }
-
-        nav a {
-            font-size: 14px;
-            text-decoration: none;
-        }
-
-        nav a:hover,
-        nav a:focus-visible {
-            color: var(--green);
-        }
-
-        main {
-            width: 100%;
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 38px 20px;
-            flex: 1;
-        }
-
-        .intro {
-            margin-bottom: 32px;
-            text-align: center;
-        }
-
-        h1 {
-            margin-bottom: 12px;
-            color: var(--green);
-            font-size: clamp(26px, 5vw, 38px);
-        }
-
-        .intro p {
-            color: var(--muted);
-            line-height: 1.6;
-        }
-
-        .games-grid {
-            display: grid;
-            grid-template-columns: repeat(
-                auto-fit,
-                minmax(min(100%, 245px), 1fr)
-            );
-            gap: 22px;
-        }
-
-        .game-card {
-            display: flex;
-            flex-direction: column;
-            min-width: 0;
-            overflow: hidden;
-            background: var(--card-background);
-            border: 1px solid var(--border);
-            border-radius: 14px;
-            transition: border-color 0.2s, transform 0.2s;
-        }
-
-        .game-card:hover {
-            border-color: var(--green);
-            transform: translateY(-3px);
-        }
-
-        .game-image {
-            display: block;
-            width: 100%;
-            height: 190px;
-            object-fit: contain;
-            background: #0c110e;
-            border-bottom: 1px solid var(--border);
-        }
-
-        .game-info {
-            display: flex;
-            flex: 1;
-            flex-direction: column;
-            align-items: stretch;
-            padding: 18px;
-        }
-
-        .game-title {
-            margin-bottom: 10px;
-            font-size: 20px;
-        }
-
-        .game-desc {
-            flex: 1;
-            margin-bottom: 20px;
-            color: var(--muted);
-            font-size: 14px;
-            line-height: 1.6;
-        }
-
-        .game-status {
-            display: block;
-            width: 100%;
-            padding: 11px 12px;
-            border: 1px solid var(--green);
-            border-radius: 7px;
-            color: var(--green);
-            text-align: center;
-            font-size: 14px;
-            font-weight: bold;
-        }
-
-        .notice {
-            margin-top: 28px;
-            color: var(--muted);
-            text-align: center;
-            font-size: 13px;
-            line-height: 1.6;
-        }
-
-        footer {
-            padding: 22px 16px;
-            border-top: 1px solid var(--border);
-            color: var(--muted);
-            text-align: center;
-            font-size: 13px;
-        }
-
-        @media (max-width: 480px) {
-            header {
-                align-items: flex-start;
-                flex-direction: column;
-                padding: 16px 20px;
-            }
-
-            nav {
-                gap: 15px;
-            }
-
-            main {
-                padding: 28px 16px;
-            }
-
-            .game-image {
-                height: 200px;
-            }
-        }
-
-        @media (prefers-reduced-motion: reduce) {
-            *,
-            *::before,
-            *::after {
-                scroll-behavior: auto !important;
-                transition: none !important;
-            }
-        }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Jeux - Budy Play</title>
+<style>
+  :root { --bg:#0b0b0c; --card:#161718; --line:#26282a; --neon:#39ff14; --text:#fff; --muted:#9a9ea3; }
+  * { box-sizing:border-box; margin:0; padding:0; }
+  body { background:var(--bg); color:var(--text); font-family:system-ui,sans-serif; line-height:1.4; }
+  header { display:flex; justify-content:space-between; align-items:center; gap:12px; padding:14px 16px; border-bottom:1px solid var(--line); }
+  .logo { color:var(--text); text-decoration:none; font-size:1.4rem; font-weight:800; }
+  .logo span { color:var(--neon); }
+  nav { display:flex; gap:8px; }
+  nav a { color:var(--text); text-decoration:none; font-size:.9rem; padding:6px 10px; border-radius:8px; border:1px solid var(--line); }
+  nav a.on { border-color:var(--neon); color:var(--neon); }
+  main { max-width:960px; margin:0 auto; padding:20px 16px 40px; }
+  h1 { font-size:1.6rem; margin-bottom:6px; }
+  .sub { color:var(--muted); margin-bottom:20px; }
+  .grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(160px,1fr)); gap:12px; }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:12px; overflow:hidden; display:flex; flex-direction:column; }
+  .pic { position:relative; aspect-ratio:1 / 1; background:#000; overflow:hidden; }
+  .pic img { position:absolute; top:0; left:0; width:100%; height:100%; object-fit:contain; display:block; }
+  .info { padding:12px; display:flex; flex-direction:column; gap:4px; flex:1; }
+  .name { font-size:1.05rem; font-weight:700; }
+  .studio { color:var(--muted); font-size:.85rem; }
+  .badge { align-self:flex-start; margin-top:auto; padding:2px 10px; font-size:.75rem; color:var(--neon); border:1px solid var(--neon); border-radius:20px; }
+  .note { color:var(--muted); font-size:.8rem; margin-top:24px; }
+</style>
 </head>
-
 <body>
+<header>
+  <a class="logo" href="index.html">Budy <span>Play</span></a>
+  <nav>
+    <a href="index.html">Accueil</a>
+    <a href="catalogue.html" class="on">Jeux</a>
+    <a href="compte.html">Compte</a>
+  </nav>
+</header>
+<main>
+  <h1>Jeux</h1>
+  <p class="sub">Les jeux de la communauté Budy Play.</p>
+  <div class="grid">
 
-    <header>
-        <a class="logo" href="index.html">BUDY PLAY</a>
+    <div class="card">
+      <div class="pic"><img src="jeu-freefire.jpg" alt="Free Fire" loading="lazy"></div>
+      <div class="info"><div class="name">Free Fire</div><div class="studio">Garena</div><span class="badge">Lancement bientôt</span></div>
+    </div>
 
-        <nav aria-label="Navigation principale">
-            <a href="index.html">Accueil</a>
-            <a href="catalogue.html" aria-current="page">Jeux</a>
-            <a href="compte.html">Mon compte</a>
-        </nav>
-    </header>
+    <div class="card">
+      <div class="pic"><img src="jeu-minecraft.jpg" alt="Minecraft" loading="lazy"></div>
+      <div class="info"><div class="name">Minecraft</div><div class="studio">Mojang Studios</div><span class="badge">Lancement bientôt</span></div>
+    </div>
 
-    <main>
-        <section class="intro">
-            <h1>Notre catalogue de jeux</h1>
-            <p>Découvre les jeux de la communauté Budy Play.</p>
-        </section>
+    <div class="card">
+      <div class="pic"><img src="jeu-fortnite.jpg" alt="Fortnite" loading="lazy"></div>
+      <div class="info"><div class="name">Fortnite</div><div class="studio">Epic Games</div><span class="badge">Lancement bientôt</span></div>
+    </div>
 
-        <section class="games-grid" aria-label="Liste des jeux">
+    <div class="card">
+      <div class="pic"><img src="jeu-roblox.jpg" alt="Roblox" loading="lazy"></div>
+      <div class="info"><div class="name">Roblox</div><div class="studio">Roblox Corporation</div><span class="badge">Lancement bientôt</span></div>
+    </div>
 
-            <article class="game-card">
-                <img
-                    class="game-image"
-                    src="https://images.unsplash.com/photo-1542751371-adc38448a05e?auto=format&fit=crop&w=600&q=80"
-                    alt="Illustration de jeu vidéo"
-                    loading="lazy"
-                >
-                <div class="game-info">
-                    <h2 class="game-title">Free Fire</h2>
-                    <p class="game-desc">
-                        Retrouve les joueurs de Free Fire et découvre
-                        les informations consacrées au jeu.
-                    </p>
-                    <span class="game-status">Lancement bientôt</span>
-                </div>
-            </article>
+    <div class="card">
+      <div class="pic"><img src="jeu-eafc.jpg" alt="EA SPORTS FC" loading="lazy"></div>
+      <div class="info"><div class="name">EA SPORTS FC</div><div class="studio">Electronic Arts</div><span class="badge">Lancement bientôt</span></div>
+    </div>
 
-            <article class="game-card">
-                <img
-                    class="game-image"
-                    src="https://images.unsplash.com/photo-1627856013091-fed6e4e30bba?auto=format&fit=crop&w=600&q=80"
-                    alt="Illustration de Minecraft"
-                    loading="lazy"
-                >
-                <div class="game-info">
-                    <h2 class="game-title">Minecraft</h2>
-                    <p class="game-desc">
-                        Explore des mondes, construis et partage
-                        ta passion pour Minecraft.
-                    </p>
-                    <span class="game-status">Lancement bientôt</span>
-                </div>
-            </article>
+    <div class="card">
+      <div class="pic"><img src="jeu-flexcity.jpg" alt="Flex City" loading="lazy"></div>
+      <div class="info"><div class="name">Flex City</div><div class="studio">Jarvi Games</div><span class="badge">Lancement bientôt</span></div>
+    </div>
 
-            <article class="game-card">
-                <img
-                    class="game-image"
-                    src="https://images.unsplash.com/photo-1589241062272-c0a000071dfa?auto=format&fit=crop&w=600&q=80"
-                    alt="Illustration de jeu vidéo"
-                    loading="lazy"
-                >
-                <div class="game-info">
-                    <h2 class="game-title">Fortnite</h2>
-                    <p class="game-desc">
-                        Découvre les informations et les nouveautés
-                        consacrées à Fortnite.
-                    </p>
-                    <span class="game-status">Lancement bientôt</span>
-                </div>
-            </article>
+    <div class="card">
+      <div class="pic"><img src="jeu-onestate.jpg" alt="OneState RP" loading="lazy"></div>
+      <div class="info"><div class="name">OneState RP</div><div class="studio">ChillBase</div><span class="badge">Lancement bientôt</span></div>
+    </div>
 
-            <article class="game-card">
-                <img
-                    class="game-image"
-                    src="https://images.unsplash.com/photo-1612287230202-1ff1d85d1bdf?auto=format&fit=crop&w=600&q=80"
-                    alt="Illustration de Roblox"
-                    loading="lazy"
-                >
-                <div class="game-info">
-                    <h2 class="game-title">Roblox</h2>
-                    <p class="game-desc">
-                        Découvre les univers et les expériences
-                        proposés par la communauté Roblox.
-                    </p>
-                    <span class="game-status">Lancement bientôt</span>
-                </div>
-            </article>
-
-            <article class="game-card">
-                <img
-                    class="game-image"
-                    src="https://images.unsplash.com/photo-1508098682722-e99c43a406b2?auto=format&fit=crop&w=600&q=80"
-                    alt="Illustration de football"
-                    loading="lazy"
-                >
-                <div class="game-info">
-                    <h2 class="game-title">EA SPORTS FC 25</h2>
-                    <p class="game-desc">
-                        Retrouvez les informations du jeu de football
-                        EA SPORTS FC 25.
-                    </p>
-                    <span class="game-status">Lancement bientôt</span>
-                </div>
-            </article>
-
-            <article class="game-card">
-                <img
-                    class="game-image"
-                    src="https://images.unsplash.com/photo-1511512578047-dfb367046420?auto=format&fit=crop&w=600&q=80"
-                    alt="Illustration de jeu en monde ouvert"
-                    loading="lazy"
-                >
-                <div class="game-info">
-                    <h2 class="game-title">Flex City</h2>
-                    <p class="game-desc">
-                        Découvre le jeu et ses possibilités
-                        dans un environnement urbain.
-                    </p>
-                    <span class="game-status">Lancement bientôt</span>
-                </div>
-            </article>
-
-            <article class="game-card">
-                <img
-                    class="game-image"
-                    src="https://images.unsplash.com/photo-1533827432537-70133748f5c8?auto=format&fit=crop&w=600&q=80"
-                    alt="Illustration de jeu en monde ouvert"
-                    loading="lazy"
-                >
-                <div class="game-info">
-                    <h2 class="game-title">One State RP</h2>
-                    <p class="game-desc">
-                        Découvre les informations de ce jeu
-                        de rôle en monde ouvert.
-                    </p>
-                    <span class="game-status">Lancement bientôt</span>
-                </div>
-            </article>
-
-        </section>
-
-        <p class="notice">
-            Les boutons de lancement seront activés après vérification
-            du fonctionnement de chaque jeu.
-        </p>
-    </main>
-
-    <footer>
-        <p>&copy; 2026 Budy Play. Tous droits réservés.</p>
-    </footer>
-
+  </div>
+  <p class="note">Les noms, logos et images des jeux appartiennent à leurs studios respectifs. Ils sont affichés uniquement pour identifier chaque jeu.</p>
+</main>
 </body>
-    </html>
+</html>
