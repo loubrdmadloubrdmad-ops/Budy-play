@@ -39,6 +39,26 @@
   .prow input { width:96px; padding:8px; border-radius:8px; border:1px solid var(--line); background:#0b0b0c; color:var(--text); font-size:1rem; }
   .prow button { padding:8px 12px; border-radius:8px; border:1px solid var(--neon); background:transparent; color:var(--neon); font-size:.9rem; }
   .hidden { display:none; }
+  .btn-add { width:100%; padding:12px; border:1px solid var(--neon); border-radius:10px; background:transparent; color:var(--neon); font-size:1rem; font-weight:700; margin-bottom:12px; }
+  label { display:block; margin:12px 0 4px; color:var(--muted); font-size:.9rem; }
+  .fld { width:100%; padding:12px; border-radius:10px; border:1px solid var(--line); background:#0b0b0c; color:var(--text); font-size:1rem; }
+  .fld:focus { outline:none; border-color:var(--neon); }
+  .btn { width:100%; margin-top:12px; padding:12px; border:0; border-radius:10px; background:var(--neon); color:#000; font-weight:700; font-size:1rem; }
+  .btn.sec { background:transparent; border:1px solid var(--line); color:var(--text); }
+  .prev { display:block; width:140px; height:140px; object-fit:contain; background:#000; border-radius:10px; margin-top:8px; }
+  .prev.hidden { display:none; }
+  .pcard { background:var(--card); border:1px solid var(--line); border-radius:12px; padding:12px; margin-bottom:10px; }
+  .pcard.off { opacity:.55; }
+  .ptop { display:flex; align-items:center; gap:10px; }
+  .thumb { width:56px; height:56px; flex:0 0 56px; border-radius:8px; background:#000; object-fit:contain; border:1px solid var(--line); }
+  .thumb.none { display:flex; align-items:center; justify-content:center; color:var(--muted); font-size:.7rem; text-align:center; }
+  .pn { flex:1; min-width:0; font-weight:700; }
+  .pn small { display:block; color:var(--muted); font-weight:400; }
+  .pact { display:flex; gap:8px; flex-wrap:wrap; margin-top:10px; align-items:center; }
+  .pact input[type=number] { width:100px; padding:8px; border-radius:8px; border:1px solid var(--line); background:#0b0b0c; color:var(--text); font-size:1rem; }
+  .pact button { padding:8px 12px; border-radius:8px; border:1px solid var(--line); background:transparent; color:var(--text); font-size:.9rem; }
+  .pact button.main { border-color:var(--neon); color:var(--neon); }
+  .pact button.rm { border-color:var(--err); color:var(--err); }
 </style>
 </head>
 <body>
@@ -60,8 +80,28 @@
     <h2>Commandes en attente</h2>
     <div id="pending"></div>
 
-    <h2>Prix des produits</h2>
-    <p class="sub">Modifie un prix puis appuie sur Enregistrer. Les anciennes commandes gardent leur prix d'origine.</p>
+    <h2>Produits et prix</h2>
+    <p class="sub">Ajoute un skin ou une émote avec sa photo, change un prix ou une photo, ou retire un produit. Les anciennes commandes gardent leur prix d'origine.</p>
+    <button class="btn-add" id="add-toggle" type="button">+ Ajouter un produit</button>
+    <form id="add-form" class="card hidden" novalidate>
+      <label for="a-cat">Catégorie</label>
+      <select id="a-cat" class="fld">
+        <option value="skins">Skins</option>
+        <option value="emotes">Émotes</option>
+        <option value="diamants">Diamants</option>
+        <option value="booyah_pass">Booyah Pass</option>
+      </select>
+      <label for="a-name">Nom</label>
+      <input id="a-name" class="fld" maxlength="80" autocomplete="off">
+      <label for="a-price">Prix en gourdes (G)</label>
+      <input id="a-price" class="fld" type="number" inputmode="numeric" min="1">
+      <label for="a-photo">Photo (facultative)</label>
+      <input id="a-photo" class="fld" type="file" accept="image/*">
+      <img id="a-prev" class="prev hidden" alt="Aperçu">
+      <button class="btn" id="a-send" type="submit">Ajouter à la boutique</button>
+      <button class="btn sec" id="a-cancel" type="button">Annuler</button>
+      <p class="msg" id="a-msg"></p>
+    </form>
     <div id="prices"></div>
 
     <h2>Dernières commandes traitées</h2>
@@ -149,26 +189,138 @@
     });
   }
 
+  var BUCKET = "product-images";
+  var allProducts = [];
+
+  function uid() {
+    try { if (window.crypto && crypto.randomUUID) return crypto.randomUUID(); } catch (e) {}
+    return Date.now().toString(36) + Math.random().toString(36).slice(2, 10);
+  }
+
+  function toJpeg(file) {
+    return new Promise(function (resolve, reject) {
+      var url = URL.createObjectURL(file), img = new Image();
+      img.onload = function () {
+        var max = 640, w = img.naturalWidth, h = img.naturalHeight;
+        var k = Math.min(1, max / Math.max(w, h));
+        var c = document.createElement("canvas");
+        c.width = Math.max(1, Math.round(w * k)); c.height = Math.max(1, Math.round(h * k));
+        var x = c.getContext("2d");
+        x.fillStyle = "#0b0b0c"; x.fillRect(0, 0, c.width, c.height);
+        x.drawImage(img, 0, 0, c.width, c.height);
+        URL.revokeObjectURL(url);
+        c.toBlob(function (blob) { blob ? resolve(blob) : reject(new Error("blob")); }, "image/jpeg", 0.82);
+      };
+      img.onerror = function () { URL.revokeObjectURL(url); reject(new Error("image")); };
+      img.src = url;
+    });
+  }
+
+  async function uploadImage(file, category) {
+    var blob = await toJpeg(file);
+    var path = category + "/" + uid() + ".jpg";
+    var up = await db.storage.from(BUCKET).upload(path, blob, { contentType: "image/jpeg", upsert: false });
+    if (up.error) throw up.error;
+    return db.storage.from(BUCKET).getPublicUrl(path).data.publicUrl;
+  }
+
+  function removeOld(url) {
+    try {
+      var i = url ? url.indexOf("/" + BUCKET + "/") : -1;
+      if (i > -1) db.storage.from(BUCKET).remove([url.slice(i + BUCKET.length + 2)]);
+    } catch (e) {}
+  }
+
+  $("add-toggle").onclick = function () {
+    $("add-form").className = $("add-form").className.indexOf("hidden") > -1 ? "card" : "card hidden";
+    $("a-msg").textContent = "";
+  };
+  $("a-cancel").onclick = function () { $("add-form").className = "card hidden"; };
+  $("a-photo").onchange = function () {
+    var f = this.files && this.files[0];
+    if (!f) { $("a-prev").className = "prev hidden"; return; }
+    $("a-prev").src = URL.createObjectURL(f); $("a-prev").className = "prev";
+  };
+  function amsg(t, k) { $("a-msg").textContent = t || ""; $("a-msg").className = "msg " + (k || ""); }
+
+  $("add-form").onsubmit = async function (ev) {
+    ev.preventDefault();
+    var cat = $("a-cat").value, name = $("a-name").value.trim(), price = parseInt($("a-price").value, 10);
+    var file = $("a-photo").files && $("a-photo").files[0];
+    if (!name) { amsg("Écris le nom du produit.", "err"); return; }
+    if (!(price > 0)) { amsg("Écris un prix valide (un nombre plus grand que 0).", "err"); return; }
+    $("a-send").disabled = true; amsg("Un instant...");
+    try {
+      var imageUrl = null;
+      if (file) imageUrl = await uploadImage(file, cat);
+      var order = allProducts.filter(function (p) { return p.category === cat; })
+        .reduce(function (m, p) { return Math.max(m, p.sort_order || 0); }, 0) + 1;
+      var ins = await db.from("products").insert({ category: cat, name: name, price_htg: price, sort_order: order, image_url: imageUrl }).select("id");
+      if (ins.error || !ins.data || !ins.data.length) throw new Error("insert");
+      amsg(name + " ajouté à la boutique.", "ok");
+      $("a-name").value = ""; $("a-price").value = ""; $("a-photo").value = ""; $("a-prev").className = "prev hidden";
+      loadPrices();
+    } catch (e) {
+      amsg("Le produit n'a pas pu être ajouté. Vérifie ta photo et réessaie.", "err");
+    }
+    $("a-send").disabled = false;
+  };
+
   async function loadPrices() {
     var box = $("prices"); box.innerHTML = "";
-    var r = await db.from("products").select("id,category,name,price_htg,sort_order").order("category").order("sort_order");
+    var r = await db.from("products").select("id,category,name,price_htg,sort_order,active,image_url").order("category").order("sort_order");
     if (r.error) { empty(box, "Les produits n'ont pas pu être chargés."); return; }
+    allProducts = r.data;
     r.data.forEach(function (p) {
-      var d = document.createElement("div"); d.className = "prow";
+      var d = document.createElement("div"); d.className = "pcard" + (p.active ? "" : " off");
+      var top = document.createElement("div"); top.className = "ptop";
+      var th;
+      if (p.image_url) { th = document.createElement("img"); th.className = "thumb"; th.src = p.image_url; th.alt = p.name; }
+      else { th = document.createElement("div"); th.className = "thumb none"; th.textContent = "Pas de photo"; }
       var n = document.createElement("div"); n.className = "pn"; n.textContent = p.name;
-      var sm = document.createElement("small"); sm.textContent = CATNAME[p.category] || p.category; n.appendChild(sm);
+      var sm = document.createElement("small"); sm.textContent = (CATNAME[p.category] || p.category) + (p.active ? "" : " - retiré de la boutique"); n.appendChild(sm);
+      top.appendChild(th); top.appendChild(n); d.appendChild(top);
+
+      var act = document.createElement("div"); act.className = "pact";
       var inp = document.createElement("input"); inp.type = "number"; inp.inputMode = "numeric"; inp.min = "1"; inp.value = p.price_htg;
-      var b = document.createElement("button"); b.type = "button"; b.textContent = "Enregistrer";
-      b.onclick = async function () {
+      var save = document.createElement("button"); save.type = "button"; save.className = "main"; save.textContent = "Enregistrer";
+      save.onclick = async function () {
         var val = parseInt(inp.value, 10);
         if (!(val > 0)) { say("Écris un prix valide (un nombre plus grand que 0).", "err"); return; }
-        b.disabled = true;
+        save.disabled = true;
         var u = await db.from("products").update({ price_htg: val }).eq("id", p.id).select("id");
-        b.disabled = false;
+        save.disabled = false;
         if (u.error || !u.data || !u.data.length) { say("Le prix n'a pas pu être changé.", "err"); return; }
         say(p.name + " : nouveau prix " + fmt(val) + ".", "ok");
       };
-      d.appendChild(n); d.appendChild(inp); d.appendChild(b); box.appendChild(d);
+      var ph = document.createElement("button"); ph.type = "button"; ph.textContent = p.image_url ? "Changer la photo" : "Ajouter une photo";
+      var fi = document.createElement("input"); fi.type = "file"; fi.accept = "image/*"; fi.className = "hidden";
+      ph.onclick = function () { fi.click(); };
+      fi.onchange = async function () {
+        var f = fi.files && fi.files[0]; if (!f) return;
+        ph.disabled = true; say("Envoi de la photo...");
+        try {
+          var url = await uploadImage(f, p.category);
+          var u = await db.from("products").update({ image_url: url }).eq("id", p.id).select("id");
+          if (u.error || !u.data || !u.data.length) throw new Error("update");
+          removeOld(p.image_url);
+          say("Photo de " + p.name + " mise à jour.", "ok");
+          loadPrices();
+        } catch (e) { say("La photo n'a pas pu être changée.", "err"); }
+        ph.disabled = false;
+      };
+      var tog = document.createElement("button"); tog.type = "button";
+      tog.className = p.active ? "rm" : "main"; tog.textContent = p.active ? "Retirer" : "Remettre";
+      tog.onclick = async function () {
+        if (p.active && !window.confirm("Retirer \"" + p.name + "\" de la boutique ? Les clients ne le verront plus.")) return;
+        tog.disabled = true;
+        var u = await db.from("products").update({ active: !p.active }).eq("id", p.id).select("id");
+        if (u.error || !u.data || !u.data.length) { say("Le changement n'a pas pu être fait.", "err"); tog.disabled = false; return; }
+        say(p.name + (p.active ? " retiré de la boutique." : " remis dans la boutique."), "ok");
+        loadPrices();
+      };
+      act.appendChild(inp); act.appendChild(save); act.appendChild(ph); act.appendChild(fi); act.appendChild(tog);
+      d.appendChild(act); box.appendChild(d);
     });
   }
 
