@@ -8,10 +8,10 @@
   :root { --bg:#0b0b0c; --card:#161718; --line:#26282a; --neon:#39ff14; --text:#fff; --muted:#9a9ea3; }
   * { box-sizing:border-box; margin:0; padding:0; }
   body { background:var(--bg); color:var(--text); font-family:system-ui,sans-serif; line-height:1.4; }
-  header { display:flex; justify-content:space-between; align-items:center; gap:12px; padding:14px 16px; border-bottom:1px solid var(--line); }
+  header { display:flex; justify-content:space-between; align-items:center; gap:12px; padding:14px 16px; border-bottom:1px solid var(--line); flex-wrap:wrap; }
   .logo { color:var(--text); text-decoration:none; font-size:1.4rem; font-weight:800; }
   .logo span { color:var(--neon); }
-  nav { display:flex; gap:8px; }
+  nav { display:flex; gap:8px; flex-wrap:wrap; }
   nav a { color:var(--text); text-decoration:none; font-size:.9rem; padding:6px 10px; border-radius:8px; border:1px solid var(--line); }
   nav a.on { border-color:var(--neon); color:var(--neon); }
   main { max-width:960px; margin:0 auto; padding:20px 16px 40px; }
@@ -31,6 +31,7 @@
   <nav>
     <a href="index.html" class="on">Accueil</a>
     <a href="catalogue.html">Jeux</a>
+    <a href="boutique.html">Boutique</a>
     <a href="compte.html">Compte</a>
   </nav>
 </header>
@@ -38,7 +39,7 @@
   <h1>Bienvenue sur Budy Play</h1>
   <p class="sub">La plateforme communautaire de jeux vidéo. En construction.</p>
   <div class="grid">
-    <div class="card"><h2>Boutique</h2><span class="badge off">Bientôt</span></div>
+    <a class="card" href="boutique.html"><h2>Boutique</h2><span class="badge">En test</span></a>
     <a class="card" href="catalogue.html"><h2>Jeux</h2><span class="badge">Voir</span></a>
     <div class="card"><h2>Messages</h2><span class="badge off">Bientôt</span></div>
     <div class="card"><h2>WhatsApp et appels</h2><span class="badge off">Bientôt</span></div>
