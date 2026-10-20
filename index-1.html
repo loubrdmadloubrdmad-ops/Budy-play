@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Budy Play</title>
+<style>
+  :root { --bg:#0b0b0c; --card:#161718; --line:#26282a; --neon:#39ff14; --text:#fff; --muted:#9a9ea3; }
+  * { box-sizing:border-box; margin:0; padding:0; }
+  body { background:var(--bg); color:var(--text); font-family:system-ui,sans-serif; line-height:1.4; }
+  header { display:flex; justify-content:space-between; align-items:center; gap:12px; padding:14px 16px; border-bottom:1px solid var(--line); flex-wrap:wrap; }
+  .logo { color:var(--text); text-decoration:none; font-size:1.4rem; font-weight:800; }
+  .logo span { color:var(--neon); }
+  nav { display:flex; gap:8px; flex-wrap:wrap; }
+  nav a { color:var(--text); text-decoration:none; font-size:.9rem; padding:6px 10px; border-radius:8px; border:1px solid var(--line); }
+  nav a.on { border-color:var(--neon); color:var(--neon); }
+  main { max-width:960px; margin:0 auto; padding:20px 16px 40px; }
+  h1 { font-size:1.6rem; margin-bottom:6px; }
+  p.sub { color:var(--muted); margin-bottom:20px; }
+  .grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(150px,1fr)); gap:12px; }
+  .card { display:block; color:inherit; text-decoration:none; background:var(--card); border:1px solid var(--line); border-radius:12px; padding:14px; }
+  a.card:hover, a.card:focus { border-color:var(--neon); }
+  .card h2 { font-size:1rem; margin-bottom:6px; }
+  .badge { font-size:.7rem; color:var(--neon); border:1px solid var(--neon); border-radius:20px; padding:2px 8px; }
+  .badge.off { color:var(--muted); border-color:var(--line); }
+</style>
+</head>
+<body>
+<header>
+  <a class="logo" href="index.html">Budy <span>Play</span></a>
+  <nav>
+    <a href="index.html" class="on">Accueil</a>
+    <a href="catalogue.html">Jeux</a>
+    <a href="boutique.html">Boutique</a>
+    <a href="compte.html">Compte</a>
+  </nav>
+</header>
+<main>
+  <h1>Bienvenue sur Budy Play</h1>
+  <p class="sub">La plateforme communautaire de jeux vidéo. En construction.</p>
+  <div class="grid">
+    <a class="card" href="boutique.html"><h2>Boutique</h2><span class="badge">En test</span></a>
+    <a class="card" href="catalogue.html"><h2>Jeux</h2><span class="badge">Voir</span></a>
+    <div class="card"><h2>Messages</h2><span class="badge off">Bientôt</span></div>
+    <div class="card"><h2>WhatsApp et appels</h2><span class="badge off">Bientôt</span></div>
+    <div class="card"><h2>Réunions</h2><span class="badge off">Bientôt</span></div>
+    <div class="card"><h2>Compétitions</h2><span class="badge off">Bientôt</span></div>
+    <a class="card" href="compte.html"><h2>Comptes et profils</h2><span class="badge">En test</span></a>
+    <div class="card"><h2>Notifications</h2><span class="badge off">Bientôt</span></div>
+  </div>
+</main>
+</body>
+</html>

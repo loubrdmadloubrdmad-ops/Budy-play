@@ -65,6 +65,7 @@
       <div class="row"><span>Rôle</span><b id="p-role"></b></div>
       <div class="row"><span>E-mail</span><b id="p-email"></b></div>
     </div>
+    <a class="btn sec" id="founder-link" href="fondateur.html" style="display:none;text-align:center;text-decoration:none;margin-bottom:0">Espace fondateur</a>
     <button class="btn sec" id="logout" type="button">Se déconnecter</button>
     <p id="msg2"></p>
   </div>
@@ -124,6 +125,7 @@
     $("p-username").textContent = "...";
     $("p-budy").textContent = "...";
     $("p-role").textContent = "...";
+    $("founder-link").style.display = "none";
     var res = await db.from("profiles").select("username,budy_id,role").eq("id", user.id).maybeSingle();
     if (res.error || !res.data) {
       $("p-username").textContent = "-";
@@ -135,6 +137,7 @@
     $("p-username").textContent = res.data.username;
     $("p-budy").textContent = String(res.data.budy_id);
     $("p-role").textContent = ROLES[res.data.role] || res.data.role;
+    $("founder-link").style.display = res.data.role === "founder" ? "block" : "none";
   }
 
   $("form").onsubmit = async function (ev) {
@@ -186,4 +189,4 @@
 })();
 </script>
 </body>
-  </html>
+</html>

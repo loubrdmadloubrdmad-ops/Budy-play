@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Boutique - Budy Play</title>
+<style>
+  :root { --bg:#0b0b0c; --card:#161718; --line:#26282a; --neon:#39ff14; --text:#fff; --muted:#9a9ea3; --err:#ff5a5a; --warn:#ffb020; }
+  * { box-sizing:border-box; margin:0; padding:0; }
+  body { background:var(--bg); color:var(--text); font-family:system-ui,sans-serif; line-height:1.4; }
+  header { display:flex; justify-content:space-between; align-items:center; gap:12px; padding:14px 16px; border-bottom:1px solid var(--line); flex-wrap:wrap; }
+  .logo { color:var(--text); text-decoration:none; font-size:1.4rem; font-weight:800; }
+  .logo span { color:var(--neon); }
+  nav { display:flex; gap:8px; flex-wrap:wrap; }
+  nav a { color:var(--text); text-decoration:none; font-size:.9rem; padding:6px 10px; border-radius:8px; border:1px solid var(--line); }
+  nav a.on { border-color:var(--neon); color:var(--neon); }
+  main { max-width:960px; margin:0 auto; padding:20px 16px 40px; }
+  h1 { font-size:1.6rem; margin-bottom:6px; }
+  h2 { font-size:1.15rem; margin-bottom:10px; }
+  .sub { color:var(--muted); margin-bottom:16px; }
+  .tabs { display:flex; gap:8px; overflow-x:auto; padding-bottom:4px; margin-bottom:14px; }
+  .tabs button { flex:0 0 auto; padding:8px 14px; border-radius:20px; border:1px solid var(--line); background:var(--card); color:var(--text); font-size:.95rem; }
+  .tabs button.on { border-color:var(--neon); color:var(--neon); }
+  .grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(150px,1fr)); gap:12px; }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:12px; padding:14px; display:flex; flex-direction:column; gap:6px; }
+  .card .pname { font-weight:700; }
+  .card .price { color:var(--neon); font-size:1.2rem; font-weight:800; }
+  .btn { width:100%; margin-top:6px; padding:10px; border:0; border-radius:10px; background:var(--neon); color:#000; font-weight:700; font-size:1rem; }
+  .btn.sec { background:transparent; border:1px solid var(--line); color:var(--text); }
+  .btn:disabled { opacity:.5; }
+  a.btn { display:block; text-align:center; text-decoration:none; }
+  .empty { color:var(--muted); padding:16px 0; }
+  .panel { background:var(--card); border:1px solid var(--neon); border-radius:12px; padding:16px; margin:18px 0; }
+  .panel ol { margin:10px 0 10px 20px; }
+  .panel li { margin-bottom:6px; }
+  .big { color:var(--neon); font-weight:800; }
+  label { display:block; margin:12px 0 4px; color:var(--muted); font-size:.9rem; }
+  input { width:100%; padding:12px; border-radius:10px; border:1px solid var(--line); background:#0b0b0c; color:var(--text); font-size:1rem; }
+  input:focus { outline:none; border-color:var(--neon); }
+  .warn { color:var(--warn); font-size:.9rem; margin-top:10px; }
+  .msg { margin-top:12px; min-height:1.2em; font-size:.95rem; }
+  .err { color:var(--err); }
+  .ok { color:var(--neon); }
+  .hidden { display:none; }
+  .orders { margin-top:26px; }
+  .order { display:flex; justify-content:space-between; gap:10px; align-items:center; padding:10px 0; border-bottom:1px solid var(--line); }
+  .order small { color:var(--muted); display:block; }
+  .chip { font-size:.75rem; padding:2px 10px; border-radius:20px; border:1px solid var(--line); white-space:nowrap; }
+  .chip.pending { color:var(--warn); border-color:var(--warn); }
+  .chip.validated { color:var(--neon); border-color:var(--neon); }
+  .chip.cancelled { color:var(--err); border-color:var(--err); }
+</style>
+</head>
+<body>
+<header>
+  <a class="logo" href="index.html">Budy <span>Play</span></a>
+  <nav>
+    <a href="index.html">Accueil</a>
+    <a href="catalogue.html">Jeux</a>
+    <a href="boutique.html" class="on">Boutique</a>
+    <a href="compte.html">Compte</a>
+  </nav>
+</header>
+<main>
+  <h1>Boutique Free Fire</h1>
+  <p class="sub">Recharge ton compte Free Fire. Prix en gourdes (G). Paiement par MonCash, vérifié à la main.</p>
+
+  <div class="tabs" id="tabs"></div>
+  <div id="list"></div>
+
+  <div id="order" class="panel hidden">
+    <h2 id="o-title"></h2>
+    <p>Prix : <span class="big" id="o-price"></span></p>
+    <ol>
+      <li>Envoie ce montant par MonCash au numéro <span class="big" id="o-number"></span>.</li>
+      <li>Note l'ID de transaction que MonCash t'envoie.</li>
+      <li>Écris-le ci-dessous avec ton ID Free Fire, puis envoie ta commande.</li>
+    </ol>
+    <form id="o-form" novalidate>
+      <label for="ff">Ton ID Free Fire (chiffres)</label>
+      <input id="ff" inputmode="numeric" autocomplete="off" maxlength="15">
+      <label for="tx">ID de transaction MonCash</label>
+      <input id="tx" autocomplete="off" maxlength="40">
+      <button class="btn" id="o-send" type="submit">Envoyer ma commande</button>
+      <button class="btn sec" id="o-cancel" type="button">Annuler</button>
+    </form>
+    <p class="warn">Ne donne jamais ton code PIN MonCash. Budy Play ne le demande jamais.</p>
+    <p class="msg" id="o-msg"></p>
+  </div>
+
+  <div id="login" class="panel hidden">
+    <h2>Connecte-toi pour acheter</h2>
+    <p class="sub">Tu dois avoir un compte et être connecté avant de commander.</p>
+    <a class="btn" href="compte.html">Me connecter ou créer un compte</a>
+    <button class="btn sec" id="l-close" type="button">Fermer</button>
+  </div>
+
+  <div id="mine" class="orders hidden">
+    <h2>Mes commandes</h2>
+    <div id="mine-list"></div>
+  </div>
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="config.js"></script>
+<script>
+(function () {
+  var cfg = window.BUDY_CONFIG;
+  var $ = function (id) { return document.getElementById(id); };
+  var MONCASH = "+509 39 26 5977";
+  var CATS = [["diamants", "Diamants"], ["skins", "Skins"], ["emotes", "Émotes"], ["booyah_pass", "Booyah Pass"]];
+  var STATUS = { pending: "En attente", validated: "Validée", cancelled: "Annulée" };
+  var KNOWN = ["Cet ID de transaction est déjà utilisé", "ID Free Fire invalide", "ID de transaction invalide",
+               "Trop de commandes en attente", "Produit introuvable", "Connexion requise"];
+  var products = [], cat = "diamants", user = null, selected = null, loadError = false;
+
+  if (!cfg || !window.supabase) {
+    $("list").innerHTML = "";
+    var e = document.createElement("p"); e.className = "empty err";
+    e.textContent = "Erreur : la configuration du site n'a pas pu être chargée.";
+    $("list").appendChild(e);
+    return;
+  }
+  var db = window.supabase.createClient(cfg.SUPABASE_URL, cfg.SUPABASE_KEY);
+
+  function fmt(n) { return String(n).replace(/\B(?=(\d{3})+(?!\d))/g, " ") + " G"; }
+  function msg(text, kind) { $("o-msg").textContent = text || ""; $("o-msg").className = "msg " + (kind || ""); }
+
+  function renderTabs() {
+    var box = $("tabs"); box.innerHTML = "";
+    CATS.forEach(function (c) {
+      var b = document.createElement("button");
+      b.type = "button"; b.textContent = c[1]; b.className = c[0] === cat ? "on" : "";
+      b.onclick = function () { cat = c[0]; renderTabs(); renderList(); };
+      box.appendChild(b);
+    });
+  }
+
+  function renderList() {
+    var box = $("list"); box.innerHTML = "";
+    if (loadError) {
+      var er = document.createElement("p"); er.className = "empty err";
+      er.textContent = "Les produits n'ont pas pu être chargés. Réessaie dans un instant.";
+      box.appendChild(er); return;
+    }
+    var items = products.filter(function (p) { return p.category === cat; });
+    if (!items.length) {
+      var em = document.createElement("p"); em.className = "empty";
+      em.textContent = "Les produits de cette catégorie arrivent bientôt.";
+      box.appendChild(em); return;
+    }
+    var grid = document.createElement("div"); grid.className = "grid";
+    items.forEach(function (p) {
+      var c = document.createElement("div"); c.className = "card";
+      var n = document.createElement("div"); n.className = "pname"; n.textContent = p.name;
+      var pr = document.createElement("div"); pr.className = "price"; pr.textContent = fmt(p.price_htg);
+      var b = document.createElement("button"); b.type = "button"; b.className = "btn"; b.textContent = "Commander";
+      b.onclick = function () { startOrder(p); };
+      c.appendChild(n); c.appendChild(pr); c.appendChild(b); grid.appendChild(c);
+    });
+    box.appendChild(grid);
+  }
+
+  function startOrder(p) {
+    if (!user) {
+      $("order").className = "panel hidden";
+      $("login").className = "panel";
+      $("login").scrollIntoView({ behavior: "smooth", block: "center" });
+      return;
+    }
+    selected = p;
+    $("login").className = "panel hidden";
+    $("o-title").textContent = p.name;
+    $("o-price").textContent = fmt(p.price_htg);
+    $("o-number").textContent = MONCASH;
+    msg("");
+    $("order").className = "panel";
+    $("order").scrollIntoView({ behavior: "smooth", block: "center" });
+  }
+
+  $("o-cancel").onclick = function () { selected = null; $("order").className = "panel hidden"; };
+  $("l-close").onclick = function () { $("login").className = "panel hidden"; };
+
+  $("o-form").onsubmit = async function (ev) {
+    ev.preventDefault();
+    if (!selected) return;
+    if (!user) { startOrder(selected); return; }
+    var ff = $("ff").value.trim(), tx = $("tx").value.trim();
+    if (!/^[0-9]{6,15}$/.test(ff)) { msg("Écris ton ID Free Fire : 6 à 15 chiffres.", "err"); return; }
+    if (!/^[A-Za-z0-9]{4,40}$/.test(tx)) { msg("Écris l'ID de transaction MonCash (lettres et chiffres, sans espace).", "err"); return; }
+    $("o-send").disabled = true; msg("Un instant...");
+    var res = await db.rpc("create_order", { p_product_id: selected.id, p_ff_id: ff, p_tx_id: tx });
+    $("o-send").disabled = false;
+    if (res.error) {
+      var m = res.error.message || "";
+      var known = KNOWN.filter(function (k) { return m.indexOf(k) > -1; })[0];
+      msg(known ? known + "." : "Ta commande n'a pas pu être envoyée. Réessaie plus tard.", "err");
+      return;
+    }
+    msg("Commande envoyée. Référence : " + res.data + ". Le fondateur va vérifier ton paiement.", "ok");
+    $("ff").value = ""; $("tx").value = "";
+    selected = null;
+    loadMine();
+  };
+
+  async function loadProducts() {
+    var r = await db.from("products").select("id,category,name,price_htg,sort_order")
+      .eq("active", true).order("sort_order", { ascending: true });
+    if (r.error) { loadError = true; products = []; } else { loadError = false; products = r.data || []; }
+    renderList();
+  }
+
+  async function loadMine() {
+    if (!user) { $("mine").className = "orders hidden"; return; }
+    var r = await db.from("orders").select("reference,product_name,price_htg,status,created_at")
+      .eq("user_id", user.id).order("created_at", { ascending: false }).limit(20);
+    var box = $("mine-list"); box.innerHTML = "";
+    $("mine").className = "orders";
+    if (r.error) {
+      var er = document.createElement("p"); er.className = "empty err";
+      er.textContent = "Tes commandes n'ont pas pu être chargées."; box.appendChild(er); return;
+    }
+    if (!r.data || !r.data.length) {
+      var em = document.createElement("p"); em.className = "empty";
+      em.textContent = "Tu n'as pas encore de commande."; box.appendChild(em); return;
+    }
+    r.data.forEach(function (o) {
+      var row = document.createElement("div"); row.className = "order";
+      var left = document.createElement("div");
+      left.appendChild(document.createTextNode(o.product_name + " - " + fmt(o.price_htg)));
+      var sm = document.createElement("small"); sm.textContent = o.reference; left.appendChild(sm);
+      var chip = document.createElement("span");
+      chip.className = "chip " + o.status; chip.textContent = STATUS[o.status] || o.status;
+      row.appendChild(left); row.appendChild(chip); box.appendChild(row);
+    });
+  }
+
+  function setUser(u) {
+    user = u || null;
+    if (!user) { $("order").className = "panel hidden"; }
+    loadMine();
+  }
+
+  renderTabs();
+  loadProducts();
+  db.auth.getSession().then(function (r) { setUser(r.data && r.data.session ? r.data.session.user : null); });
+})();
+</script>
+</body>
+</html>

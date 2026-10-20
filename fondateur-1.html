@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Fondateur - Budy Play</title>
+<style>
+  :root { --bg:#0b0b0c; --card:#161718; --line:#26282a; --neon:#39ff14; --text:#fff; --muted:#9a9ea3; --err:#ff4d4d; --warn:#ffb020; }
+  * { box-sizing:border-box; margin:0; padding:0; }
+  body { background:var(--bg); color:var(--text); font-family:system-ui,sans-serif; line-height:1.4; }
+  header { display:flex; justify-content:space-between; align-items:center; gap:12px; padding:14px 16px; border-bottom:1px solid var(--line); flex-wrap:wrap; }
+  .logo { color:var(--text); text-decoration:none; font-size:1.4rem; font-weight:800; }
+  .logo span { color:var(--neon); }
+  nav { display:flex; gap:8px; flex-wrap:wrap; }
+  nav a { color:var(--text); text-decoration:none; font-size:.9rem; padding:6px 10px; border-radius:8px; border:1px solid var(--line); }
+  main { max-width:720px; margin:0 auto; padding:20px 16px 40px; }
+  h1 { font-size:1.6rem; margin-bottom:6px; }
+  h2 { font-size:1.15rem; margin:26px 0 10px; }
+  .sub { color:var(--muted); margin-bottom:12px; }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:12px; padding:14px; margin-bottom:12px; }
+  .row { display:flex; justify-content:space-between; gap:10px; padding:3px 0; }
+  .row span:first-child { color:var(--muted); }
+  .row b { text-align:right; word-break:break-all; }
+  .acts { display:flex; gap:10px; margin-top:12px; }
+  .acts button { flex:1; padding:12px; border:0; border-radius:10px; font-size:1.3rem; font-weight:800; }
+  .v { background:var(--neon); color:#000; }
+  .x { background:var(--err); color:#fff; }
+  button:disabled { opacity:.5; }
+  .empty { color:var(--muted); padding:6px 0; }
+  .msg { margin:10px 0; min-height:1.2em; }
+  .err { color:var(--err); }
+  .ok { color:var(--neon); }
+  .chip { font-size:.75rem; padding:2px 10px; border-radius:20px; border:1px solid var(--line); }
+  .chip.validated { color:var(--neon); border-color:var(--neon); }
+  .chip.cancelled { color:var(--err); border-color:var(--err); }
+  .prow { display:flex; align-items:center; gap:8px; padding:8px 0; border-bottom:1px solid var(--line); }
+  .prow .pn { flex:1; min-width:0; }
+  .prow small { color:var(--muted); display:block; }
+  .prow input { width:96px; padding:8px; border-radius:8px; border:1px solid var(--line); background:#0b0b0c; color:var(--text); font-size:1rem; }
+  .prow button { padding:8px 12px; border-radius:8px; border:1px solid var(--neon); background:transparent; color:var(--neon); font-size:.9rem; }
+  .hidden { display:none; }
+</style>
+</head>
+<body>
+<header>
+  <a class="logo" href="index.html">Budy <span>Play</span></a>
+  <nav>
+    <a href="boutique.html">Boutique</a>
+    <a href="compte.html">Compte</a>
+  </nav>
+</header>
+<main>
+  <h1>Espace fondateur</h1>
+  <p class="msg" id="state">Chargement...</p>
+
+  <div id="admin" class="hidden">
+    <p class="sub">Vérifie chaque paiement MonCash avant de valider. V = valider, X = annuler.</p>
+    <p class="msg" id="msg"></p>
+
+    <h2>Commandes en attente</h2>
+    <div id="pending"></div>
+
+    <h2>Prix des produits</h2>
+    <p class="sub">Modifie un prix puis appuie sur Enregistrer. Les anciennes commandes gardent leur prix d'origine.</p>
+    <div id="prices"></div>
+
+    <h2>Dernières commandes traitées</h2>
+    <div id="done"></div>
+  </div>
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="config.js"></script>
+<script>
+(function () {
+  var cfg = window.BUDY_CONFIG;
+  var $ = function (id) { return document.getElementById(id); };
+  var CATNAME = { diamants: "Diamants", skins: "Skins", emotes: "Émotes", booyah_pass: "Booyah Pass" };
+  function fmt(n) { return String(n).replace(/\B(?=(\d{3})+(?!\d))/g, " ") + " G"; }
+  function state(t, k) { $("state").textContent = t || ""; $("state").className = "msg " + (k || ""); }
+  function say(t, k) { $("msg").textContent = t || ""; $("msg").className = "msg " + (k || ""); }
+  function empty(box, t) { var p = document.createElement("p"); p.className = "empty"; p.textContent = t; box.appendChild(p); }
+  function row(card, a, b) {
+    var r = document.createElement("div"); r.className = "row";
+    var s1 = document.createElement("span"); s1.textContent = a;
+    var s2 = document.createElement("b"); s2.textContent = b;
+    r.appendChild(s1); r.appendChild(s2); card.appendChild(r);
+  }
+  function when(d) { try { return new Date(d).toLocaleString("fr-FR"); } catch (e) { return String(d); } }
+
+  if (!cfg || !window.supabase) { state("Erreur : la configuration du site n'a pas pu être chargée.", "err"); return; }
+  var db = window.supabase.createClient(cfg.SUPABASE_URL, cfg.SUPABASE_KEY);
+
+  async function loadPending() {
+    var box = $("pending"); box.innerHTML = "";
+    var r = await db.from("orders").select("id,reference,buyer_username,buyer_budy_id,product_name,price_htg,ff_player_id,moncash_tx_id,created_at")
+      .eq("status", "pending").order("created_at", { ascending: true });
+    if (r.error) { empty(box, "Les commandes n'ont pas pu être chargées."); return; }
+    if (!r.data.length) { empty(box, "Aucune commande en attente."); return; }
+    r.data.forEach(function (o) {
+      var c = document.createElement("div"); c.className = "card";
+      row(c, "Référence", o.reference);
+      row(c, "Membre", o.buyer_username + " (BI " + o.buyer_budy_id + ")");
+      row(c, "Produit", o.product_name);
+      row(c, "Montant à recevoir", fmt(o.price_htg));
+      row(c, "ID Free Fire", o.ff_player_id);
+      row(c, "ID transaction MonCash", o.moncash_tx_id);
+      row(c, "Reçue le", when(o.created_at));
+      var acts = document.createElement("div"); acts.className = "acts";
+      var v = document.createElement("button"); v.type = "button"; v.className = "v"; v.textContent = "V";
+      var x = document.createElement("button"); x.type = "button"; x.className = "x"; x.textContent = "X";
+      v.onclick = function () { decide(o, "validated", v, x); };
+      x.onclick = function () { decide(o, "cancelled", v, x); };
+      acts.appendChild(v); acts.appendChild(x); c.appendChild(acts); box.appendChild(c);
+    });
+  }
+
+  async function decide(o, decision, v, x) {
+    var ask = decision === "validated"
+      ? "Valider la commande " + o.reference + " (" + o.product_name + ", " + fmt(o.price_htg) + ") ?\nAs-tu bien reçu le paiement MonCash ?"
+      : "Annuler la commande " + o.reference + " ?";
+    if (!window.confirm(ask)) return;
+    v.disabled = true; x.disabled = true; say("Un instant...");
+    var r = await db.rpc("decide_order", { p_order_id: o.id, p_decision: decision });
+    if (r.error) {
+      say(r.error.message && r.error.message.indexOf("déjà traitée") > -1
+        ? "Cette commande a déjà été traitée." : "L'action n'a pas pu être faite.", "err");
+    } else {
+      say("Commande " + o.reference + (decision === "validated" ? " validée." : " annulée."), "ok");
+    }
+    loadPending(); loadDone();
+  }
+
+  async function loadDone() {
+    var box = $("done"); box.innerHTML = "";
+    var r = await db.from("orders").select("reference,buyer_username,product_name,price_htg,status,decided_at")
+      .neq("status", "pending").order("decided_at", { ascending: false }).limit(15);
+    if (r.error) { empty(box, "L'historique n'a pas pu être chargé."); return; }
+    if (!r.data.length) { empty(box, "Rien pour l'instant."); return; }
+    r.data.forEach(function (o) {
+      var c = document.createElement("div"); c.className = "card";
+      var h = document.createElement("div"); h.className = "row";
+      var a = document.createElement("span"); a.textContent = o.reference + " - " + o.buyer_username;
+      var chip = document.createElement("span"); chip.className = "chip " + o.status;
+      chip.textContent = o.status === "validated" ? "Validée" : "Annulée";
+      h.appendChild(a); h.appendChild(chip); c.appendChild(h);
+      row(c, o.product_name, fmt(o.price_htg));
+      box.appendChild(c);
+    });
+  }
+
+  async function loadPrices() {
+    var box = $("prices"); box.innerHTML = "";
+    var r = await db.from("products").select("id,category,name,price_htg,sort_order").order("category").order("sort_order");
+    if (r.error) { empty(box, "Les produits n'ont pas pu être chargés."); return; }
+    r.data.forEach(function (p) {
+      var d = document.createElement("div"); d.className = "prow";
+      var n = document.createElement("div"); n.className = "pn"; n.textContent = p.name;
+      var sm = document.createElement("small"); sm.textContent = CATNAME[p.category] || p.category; n.appendChild(sm);
+      var inp = document.createElement("input"); inp.type = "number"; inp.inputMode = "numeric"; inp.min = "1"; inp.value = p.price_htg;
+      var b = document.createElement("button"); b.type = "button"; b.textContent = "Enregistrer";
+      b.onclick = async function () {
+        var val = parseInt(inp.value, 10);
+        if (!(val > 0)) { say("Écris un prix valide (un nombre plus grand que 0).", "err"); return; }
+        b.disabled = true;
+        var u = await db.from("products").update({ price_htg: val }).eq("id", p.id).select("id");
+        b.disabled = false;
+        if (u.error || !u.data || !u.data.length) { say("Le prix n'a pas pu être changé.", "err"); return; }
+        say(p.name + " : nouveau prix " + fmt(val) + ".", "ok");
+      };
+      d.appendChild(n); d.appendChild(inp); d.appendChild(b); box.appendChild(d);
+    });
+  }
+
+  async function start() {
+    var s = await db.auth.getSession();
+    var session = s.data && s.data.session;
+    if (!session) { state("Connecte-toi d'abord avec ton compte fondateur (page Compte).", "err"); return; }
+    var p = await db.from("profiles").select("role").eq("id", session.user.id).maybeSingle();
+    if (p.error || !p.data || p.data.role !== "founder") { state("Accès réservé au fondateur.", "err"); return; }
+    state("");
+    $("admin").className = "";
+    loadPending(); loadPrices(); loadDone();
+  }
+  start();
+})();
+</script>
+</body>
+</html>
