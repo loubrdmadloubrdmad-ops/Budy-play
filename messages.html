@@ -58,6 +58,12 @@
     <p style="margin-top:12px"><a class="btn" style="text-decoration:none;display:inline-block" href="compte.html">Se connecter</a></p>
   </div>
 
+  <div id="waiting" class="hidden card">
+    <h1>Messages</h1>
+    <p>Ton compte doit être accepté par l'équipe Budy Play avant d'utiliser les messages et les amis.</p>
+    <p style="margin-top:12px"><a class="btn" style="text-decoration:none;display:inline-block" href="compte.html">Voir mon compte</a></p>
+  </div>
+
   <div id="app" class="hidden">
     <div id="list-view">
       <h1>Messages</h1>
@@ -272,10 +278,18 @@
   db.auth.getSession().then(function (s) {
     var sess = s.data && s.data.session;
     if (!sess) { $("guest").className = "card"; return; }
-    me = sess.user.id; $("app").className = "";
+    me = sess.user.id;
+    db.rpc("my_status").then(function (st) {
+      if (st.data !== "approved") { $("waiting").className = "card"; return; }
+      $("app").className = "";
+      start();
+    });
+    return;
+    function start() {
     db.rpc("my_dm_policy").then(function (r) { if (!r.error && r.data) $("policy").value = r.data; });
     db.from("profiles").select("budy_id").eq("id", me).single().then(function (r) { if (r.data) $("myid").textContent = r.data.budy_id; });
     loadConvs(); loadFriends();
+    }
   });
 })();
 </script>
