@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Compétitions - Budy Play</title>
+<style>
+  :root { --bg:#0b0b0c; --card:#161718; --line:#26282a; --neon:#39ff14; --text:#fff; --muted:#9a9ea3; --err:#ff5a5a; }
+  * { box-sizing:border-box; margin:0; padding:0; }
+  body { background:var(--bg); color:var(--text); font-family:system-ui,sans-serif; line-height:1.4; }
+  header { padding:16px; border-bottom:1px solid var(--line); display:flex; justify-content:space-between; align-items:center; }
+  header a { color:var(--text); text-decoration:none; font-size:1.4rem; font-weight:800; }
+  header a span { color:var(--neon); }
+  header a.s { font-size:.95rem; font-weight:600; color:var(--muted); }
+  main { max-width:560px; margin:0 auto; padding:16px 16px 40px; }
+  h1 { font-size:1.5rem; margin-bottom:12px; }
+  h2 { font-size:1.05rem; margin-bottom:10px; color:var(--neon); }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:12px; padding:14px; margin-bottom:12px; }
+  .top { display:flex; justify-content:space-between; gap:10px; align-items:flex-start; }
+  .title { font-weight:800; font-size:1.05rem; }
+  .sub { color:var(--muted); font-size:.88rem; margin-top:2px; }
+  .desc { margin-top:8px; font-size:.95rem; white-space:pre-wrap; }
+  .tag { font-size:.75rem; border:1px solid var(--line); border-radius:99px; padding:2px 8px; color:var(--muted); white-space:nowrap; }
+  .tag.g { color:var(--neon); border-color:var(--neon); }
+  .tag.r { color:var(--err); border-color:var(--err); }
+  .acts { display:flex; gap:8px; margin-top:10px; flex-wrap:wrap; align-items:center; }
+  .btn { padding:10px 14px; border:0; border-radius:10px; background:var(--neon); color:#000; font-weight:700; font-size:.95rem; text-decoration:none; display:inline-block; }
+  .btn.sec { background:transparent; border:1px solid var(--line); color:var(--text); }
+  .btn.no { background:transparent; border:1px solid var(--err); color:var(--err); }
+  .btn:disabled { opacity:.5; }
+  label { display:block; margin:10px 0 4px; color:var(--muted); font-size:.9rem; }
+  input, select, textarea { width:100%; padding:11px; border-radius:10px; border:1px solid var(--line); background:#0b0b0c; color:var(--text); font-size:1rem; font-family:inherit; }
+  textarea { min-height:70px; resize:vertical; }
+  input:focus, select:focus, textarea:focus { outline:none; border-color:var(--neon); }
+  .msg { min-height:1.2em; margin:6px 0 10px; font-size:.95rem; }
+  .err { color:var(--err); } .ok { color:var(--neon); }
+  .empty { color:var(--muted); padding:6px 0; }
+  .hidden { display:none; }
+  .plist { margin-top:10px; border-top:1px solid var(--line); padding-top:8px; }
+  .prow { display:flex; justify-content:space-between; align-items:center; gap:8px; padding:6px 0; border-bottom:1px solid var(--line); font-size:.95rem; }
+  .prow:last-child { border-bottom:0; }
+  .prow input { width:70px; padding:6px; }
+  .rank { color:var(--neon); font-weight:800; }
+</style>
+</head>
+<body>
+<header><a href="index.html">Budy <span>Play</span></a><a class="s" href="compte.html">Compte</a></header>
+<main>
+  <h1>Compétitions</h1>
+  <p class="msg" id="msg"></p>
+
+  <div id="create-box" class="card hidden">
+    <h2>Créer une compétition</h2>
+    <label for="c-title">Titre (3 à 80 caractères)</label>
+    <input id="c-title" maxlength="80">
+    <label for="c-game">Jeu</label>
+    <select id="c-game">
+      <option>Free Fire</option><option>Fortnite</option><option>Roblox</option>
+      <option>Minecraft</option><option>EA SPORTS FC</option><option>Flex City</option><option>One State</option>
+    </select>
+    <label for="c-desc">Description et règles (600 caractères max)</label>
+    <textarea id="c-desc" maxlength="600"></textarea>
+    <label for="c-date">Date et heure de début (facultatif)</label>
+    <input id="c-date" type="datetime-local">
+    <label for="c-max">Nombre de places maximum (facultatif)</label>
+    <input id="c-max" type="number" inputmode="numeric" min="2" max="1000">
+    <div class="acts"><button class="btn" id="c-save" type="button">Publier la compétition</button></div>
+  </div>
+
+  <div id="list"><p class="empty">Chargement...</p></div>
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="config.js"></script>
+<script>
+(function () {
+  var cfg = window.BUDY_CONFIG || {};
+  var $ = function (id) { return document.getElementById(id); };
+  var db = window.supabase.createClient(cfg.SUPABASE_URL, cfg.SUPABASE_KEY);
+  var STATUS = { open: "Inscriptions ouvertes", closed: "Inscriptions fermées", finished: "Terminée", cancelled: "Annulée" };
+  var me = { logged: false, approved: false, founder: false };
+  var openPanels = {};
+
+  function el(tag, cls, txt) { var e = document.createElement(tag); if (cls) e.className = cls; if (txt != null) e.textContent = txt; return e; }
+  function say(t, ok) { $("msg").textContent = t || ""; $("msg").className = "msg " + (ok ? "ok" : "err"); }
+  function when(d) { try { return new Date(d).toLocaleString("fr-FR", { dateStyle: "medium", timeStyle: "short" }); } catch (e) { return ""; } }
+  function nice(m) {
+    m = (m || "").toLowerCase();
+    if (m.indexOf("attente") > -1) return "Ton compte doit d'abord être accepté par l'équipe.";
+    if (m.indexOf("deja") > -1) return "Tu es déjà inscrit.";
+    if (m.indexOf("complete") > -1) return "Cette compétition est complète.";
+    if (m.indexOf("fermees") > -1) return "Les inscriptions sont fermées.";
+    if (m.indexOf("connexion") > -1) return "Connecte-toi d'abord.";
+    return "Action refusée ou impossible pour le moment.";
+  }
+
+  function act(promise, okText) {
+    return promise.then(function (r) {
+      if (r.error) { say(nice(r.error.message)); return false; }
+      if (okText) say(okText, true);
+      load(); return true;
+    });
+  }
+
+  function renderParticipants(c, box) {
+    box.textContent = "";
+    db.rpc("competition_participants", { p_id: c.id }).then(function (r) {
+      if (r.error) { box.appendChild(el("p", "empty", "Liste visible seulement pour les membres acceptés.")); return; }
+      if (!r.data.length) { box.appendChild(el("p", "empty", "Aucun participant pour le moment.")); return; }
+      r.data.forEach(function (p) {
+        var row = el("div", "prow");
+        var left = el("span", null, p.username + "  #" + p.budy_id);
+        row.appendChild(left);
+        if (me.founder) {
+          var inp = el("input"); inp.type = "number"; inp.min = "1"; inp.placeholder = "Rang"; if (p.rank) inp.value = p.rank;
+          var b = el("button", "btn sec", "OK"); b.type = "button";
+          b.onclick = function () {
+            var v = parseInt(inp.value, 10);
+            if (!v || v < 1) { say("Écris un rang (1, 2, 3...)."); return; }
+            db.rpc("set_entry_rank", { p_entry: p.entry_id, p_rank: v }).then(function (x) {
+              if (x.error) say("Rang refusé."); else { say("Rang enregistré.", true); renderParticipants(c, box); }
+            });
+          };
+          var wrap = el("span"); wrap.style.display = "flex"; wrap.style.gap = "6px"; wrap.appendChild(inp); wrap.appendChild(b);
+          row.appendChild(wrap);
+        } else if (p.rank) {
+          row.appendChild(el("span", "rank", "Rang " + p.rank));
+        }
+        box.appendChild(row);
+      });
+    });
+  }
+
+  function render(rows) {
+    var box = $("list"); box.textContent = "";
+    if (!rows.length) { box.appendChild(el("p", "empty", "Aucune compétition pour le moment.")); return; }
+    rows.forEach(function (c) {
+      var card = el("div", "card");
+      var top = el("div", "top");
+      var left = el("div");
+      left.appendChild(el("div", "title", c.title));
+      var line = c.game + (c.starts_at ? " · " + when(c.starts_at) : "");
+      left.appendChild(el("div", "sub", line));
+      var places = c.participants + (c.max_participants ? " / " + c.max_participants : "") + " inscrit(s)";
+      left.appendChild(el("div", "sub", places));
+      top.appendChild(left);
+      top.appendChild(el("span", "tag " + (c.status === "open" ? "g" : c.status === "cancelled" ? "r" : ""), STATUS[c.status] || c.status));
+      card.appendChild(top);
+      if (c.description) card.appendChild(el("div", "desc", c.description));
+
+      var acts = el("div", "acts");
+      if (c.status === "open") {
+        if (!me.logged) {
+          var l = el("a", "btn", "Se connecter pour participer"); l.href = "compte.html"; acts.appendChild(l);
+        } else if (c.joined) {
+          var q = el("button", "btn no", "Me retirer"); q.type = "button";
+          q.onclick = function () { act(db.rpc("leave_competition", { p_id: c.id }), "Tu es retiré de la compétition."); };
+          acts.appendChild(el("span", "tag g", "Tu es inscrit")); acts.appendChild(q);
+        } else {
+          var j = el("button", "btn", "Participer"); j.type = "button";
+          j.onclick = function () { j.disabled = true; act(db.rpc("register_competition", { p_id: c.id }), "Inscription enregistrée.").then(function () { j.disabled = false; }); };
+          acts.appendChild(j);
+        }
+      } else if (c.joined) { acts.appendChild(el("span", "tag g", "Tu étais inscrit")); }
+
+      if (me.approved) {
+        var pb = el("button", "btn sec", openPanels[c.id] ? "Cacher les participants" : "Participants"); pb.type = "button";
+        var plist = el("div", "plist" + (openPanels[c.id] ? "" : " hidden"));
+        pb.onclick = function () {
+          var show = plist.className.indexOf("hidden") > -1;
+          openPanels[c.id] = show; plist.className = "plist" + (show ? "" : " hidden");
+          pb.textContent = show ? "Cacher les participants" : "Participants";
+          if (show) renderParticipants(c, plist);
+        };
+        acts.appendChild(pb);
+        card.appendChild(acts); card.appendChild(plist);
+        if (openPanels[c.id]) renderParticipants(c, plist);
+      } else { card.appendChild(acts); }
+
+      if (me.founder) {
+        var f = el("div", "acts");
+        [["open", "Ouvrir"], ["closed", "Fermer"], ["finished", "Terminer"], ["cancelled", "Annuler"]].forEach(function (s) {
+          if (c.status === s[0]) return;
+          var b = el("button", s[0] === "cancelled" ? "btn no" : "btn sec", s[1]); b.type = "button";
+          b.onclick = function () { act(db.rpc("set_competition_status", { p_id: c.id, p_status: s[0] }), "Statut mis à jour."); };
+          f.appendChild(b);
+        });
+        card.appendChild(f);
+      }
+      box.appendChild(card);
+    });
+  }
+
+  function load() {
+    db.rpc("competitions_list").then(function (r) {
+      if (r.error) { $("list").textContent = ""; $("list").appendChild(el("p", "empty", "Impossible de charger les compétitions.")); return; }
+      render(r.data || []);
+    });
+  }
+
+  $("c-save").onclick = function () {
+    var title = $("c-title").value.trim();
+    if (title.length < 3) { say("Le titre doit avoir au moins 3 caractères."); return; }
+    var d = $("c-date").value;
+    var mx = parseInt($("c-max").value, 10);
+    $("c-save").disabled = true;
+    db.rpc("create_competition", {
+      p_title: title, p_game: $("c-game").value, p_description: $("c-desc").value.trim(),
+      p_starts_at: d ? new Date(d).toISOString() : null, p_max: mx >= 2 ? mx : null
+    }).then(function (r) {
+      $("c-save").disabled = false;
+      if (r.error) { say("Impossible de créer (vérifie les champs)."); return; }
+      say("Compétition publiée.", true);
+      $("c-title").value = ""; $("c-desc").value = ""; $("c-date").value = ""; $("c-max").value = "";
+      load();
+    });
+  };
+
+  db.auth.getSession().then(function (s) {
+    var sess = s.data && s.data.session;
+    if (!sess) { load(); return; }
+    me.logged = true;
+    db.from("profiles").select("role,status").eq("id", sess.user.id).maybeSingle().then(function (r) {
+      var p = r.data || {};
+      me.approved = p.status === "approved";
+      me.founder = me.approved && p.role === "founder";
+      if (me.founder) $("create-box").className = "card";
+      if (!me.approved) say("Ton compte doit être accepté par l'équipe pour participer.");
+      load();
+    });
+  });
+})();
+</script>
+</body>
+  </html>
