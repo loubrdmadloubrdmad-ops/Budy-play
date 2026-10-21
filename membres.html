@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Membres - Budy Play</title>
+<style>
+  :root { --bg:#0b0b0c; --card:#161718; --line:#26282a; --neon:#39ff14; --text:#fff; --muted:#9a9ea3; --err:#ff5a5a; }
+  * { box-sizing:border-box; margin:0; padding:0; }
+  body { background:var(--bg); color:var(--text); font-family:system-ui,sans-serif; line-height:1.4; }
+  header { padding:16px; border-bottom:1px solid var(--line); display:flex; justify-content:space-between; align-items:center; }
+  header a { color:var(--text); text-decoration:none; font-size:1.4rem; font-weight:800; }
+  header a span { color:var(--neon); }
+  header a.s { font-size:.95rem; font-weight:600; color:var(--muted); }
+  main { max-width:560px; margin:0 auto; padding:16px 16px 40px; }
+  h1 { font-size:1.5rem; margin-bottom:12px; }
+  h2 { font-size:1.05rem; margin:18px 0 10px; color:var(--neon); }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:12px; padding:12px 14px; margin-bottom:10px; }
+  .top { display:flex; justify-content:space-between; gap:10px; align-items:flex-start; }
+  .who { font-weight:700; }
+  .sub { color:var(--muted); font-size:.85rem; word-break:break-all; }
+  .tag { font-size:.75rem; border:1px solid var(--line); border-radius:99px; padding:2px 8px; color:var(--muted); white-space:nowrap; }
+  .tag.g { color:var(--neon); border-color:var(--neon); }
+  .tag.r { color:var(--err); border-color:var(--err); }
+  .acts { display:flex; gap:8px; margin-top:10px; flex-wrap:wrap; }
+  .btn { padding:10px 14px; border:0; border-radius:10px; background:var(--neon); color:#000; font-weight:700; font-size:.95rem; }
+  .btn.no { background:transparent; border:1px solid var(--err); color:var(--err); }
+  .btn.sec { background:transparent; border:1px solid var(--line); color:var(--text); }
+  .btn:disabled { opacity:.5; }
+  select { padding:10px; border-radius:10px; border:1px solid var(--line); background:#0b0b0c; color:var(--text); font-size:.95rem; }
+  .msg { min-height:1.2em; margin:6px 0; font-size:.95rem; }
+  .err { color:var(--err); } .ok { color:var(--neon); }
+  .empty { color:var(--muted); padding:6px 0; }
+  .hidden { display:none; }
+</style>
+</head>
+<body>
+<header><a href="index.html">Budy <span>Play</span></a><a class="s" href="compte.html">Compte</a></header>
+<main>
+  <h1>Gérer les membres</h1>
+  <p class="msg" id="state">Chargement...</p>
+  <p class="msg" id="msg"></p>
+
+  <div id="staff" class="hidden">
+    <h2>Inscriptions à valider</h2>
+    <div id="pending"></div>
+    <div id="founder-part" class="hidden">
+      <h2>Tous les membres et grades</h2>
+      <div id="all"></div>
+    </div>
+  </div>
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="config.js"></script>
+<script>
+(function () {
+  var cfg = window.BUDY_CONFIG || {};
+  var $ = function (id) { return document.getElementById(id); };
+  var db = window.supabase.createClient(cfg.SUPABASE_URL, cfg.SUPABASE_KEY);
+  var ROLES = { member: "Membre", moderator: "Modérateur", founder: "Fondateur" };
+  var STATUS = { pending: "En attente", approved: "Accepté", rejected: "Refusé" };
+  var isFounder = false;
+
+  function el(tag, cls, txt) { var e = document.createElement(tag); if (cls) e.className = cls; if (txt != null) e.textContent = txt; return e; }
+  function state(t) { $("state").textContent = t || ""; }
+  function say(t, ok) { $("msg").textContent = t || ""; $("msg").className = "msg " + (ok ? "ok" : "err"); }
+  function when(d) { try { return new Date(d).toLocaleDateString("fr-FR"); } catch (e) { return ""; } }
+
+  function memberCard(m, withRole) {
+    var c = el("div", "card");
+    var top = el("div", "top");
+    var left = el("div");
+    left.appendChild(el("div", "who", m.username + "  #" + m.budy_id));
+    left.appendChild(el("div", "sub", m.email + " · inscrit le " + when(m.created_at)));
+    top.appendChild(left);
+    var st = el("span", "tag " + (m.status === "approved" ? "g" : m.status === "rejected" ? "r" : ""), STATUS[m.status] || m.status);
+    top.appendChild(st);
+    c.appendChild(top);
+    return c;
+  }
+
+  function review(m, yes, btns) {
+    btns.forEach(function (b) { b.disabled = true; });
+    db.rpc("review_member", { p_id: m.id, p_approve: yes }).then(function (r) {
+      if (r.error) { say("Action refusée ou impossible."); btns.forEach(function (b) { b.disabled = false; }); return; }
+      say(yes ? m.username + " est accepté." : m.username + " est refusé.", true);
+      loadAll();
+    });
+  }
+
+  function loadPending() {
+    return db.rpc("pending_members").then(function (r) {
+      var box = $("pending"); box.textContent = "";
+      if (r.error) { box.appendChild(el("p", "empty", "Impossible de charger.")); return; }
+      if (!r.data.length) { box.appendChild(el("p", "empty", "Aucune inscription à valider.")); return; }
+      r.data.forEach(function (m) {
+        var c = memberCard(m);
+        var a = el("div", "acts");
+        var y = el("button", "btn", "Accepter"); y.type = "button";
+        var n = el("button", "btn no", "Refuser"); n.type = "button";
+        if (m.status === "rejected") n.style.display = "none";
+        y.onclick = function () { review(m, true, [y, n]); };
+        n.onclick = function () { review(m, false, [y, n]); };
+        a.appendChild(y); a.appendChild(n); c.appendChild(a); box.appendChild(c);
+      });
+    });
+  }
+
+  function loadMembers() {
+    return db.rpc("list_members").then(function (r) {
+      var box = $("all"); box.textContent = "";
+      if (r.error) { box.appendChild(el("p", "empty", "Impossible de charger.")); return; }
+      r.data.forEach(function (m) {
+        var c = memberCard(m);
+        var a = el("div", "acts");
+        if (m.role === "founder") { a.appendChild(el("span", "tag g", "Fondateur")); }
+        else {
+          var sel = el("select");
+          [["member", "Membre"], ["moderator", "Modérateur"]].forEach(function (o) {
+            var op = el("option", null, o[1]); op.value = o[0]; if (m.role === o[0]) op.selected = true; sel.appendChild(op);
+          });
+          var b = el("button", "btn sec", "Changer le grade"); b.type = "button";
+          b.onclick = function () {
+            b.disabled = true;
+            db.rpc("set_member_role", { p_id: m.id, p_role: sel.value }).then(function (r2) {
+              b.disabled = false;
+              if (r2.error) { say("Action refusée ou impossible."); return; }
+              say(m.username + " est maintenant " + (ROLES[sel.value] || sel.value).toLowerCase() + ".", true);
+              loadAll();
+            });
+          };
+          a.appendChild(sel); a.appendChild(b);
+        }
+        c.appendChild(a); box.appendChild(c);
+      });
+    });
+  }
+
+  function loadAll() { loadPending(); if (isFounder) loadMembers(); }
+
+  db.auth.getSession().then(function (s) {
+    var sess = s.data && s.data.session;
+    if (!sess) { state("Connecte-toi d'abord dans Compte."); return; }
+    db.from("profiles").select("role,status").eq("id", sess.user.id).maybeSingle().then(function (r) {
+      var p = r.data;
+      if (!p || p.status !== "approved" || (p.role !== "founder" && p.role !== "moderator")) { state("Cette page est réservée à l'équipe."); return; }
+      isFounder = p.role === "founder";
+      state(""); $("staff").className = "";
+      if (isFounder) $("founder-part").className = "";
+      loadAll();
+    });
+  });
+})();
+</script>
+</body>
+</html>
