@@ -30,6 +30,10 @@
   .row:last-child { border-bottom:0; }
   .row b { color:var(--neon); text-align:right; word-break:break-all; }
   .hidden { display:none; }
+  .link { background:none; border:0; color:var(--neon); font-size:.95rem; margin-top:12px; padding:4px 0; text-decoration:underline; }
+  .pw { position:relative; }
+  .pw input { padding-right:84px; }
+  .pw button { position:absolute; right:6px; top:6px; height:36px; padding:0 12px; border-radius:8px; border:1px solid var(--line); background:var(--card); color:var(--text); font-size:.85rem; }
 </style>
 </head>
 <body>
@@ -48,12 +52,27 @@
           <input id="username" autocomplete="username" maxlength="20">
         </div>
         <label for="email">E-mail</label>
-        <input id="email" type="email" autocomplete="email">
+        <input id="email" type="email" autocomplete="email" inputmode="email">
         <label for="password">Mot de passe (8 caractères minimum)</label>
-        <input id="password" type="password" autocomplete="current-password">
+        <div class="pw">
+          <input id="password" type="password" autocomplete="current-password">
+          <button id="eye" type="button">Voir</button>
+        </div>
         <button class="btn" id="submit" type="submit">Se connecter</button>
       </form>
+      <button class="link" id="forgot" type="button">Mot de passe oublié ?</button>
+      <button class="link hidden" id="resend" type="button">Renvoyer l'e-mail de confirmation</button>
       <p id="msg"></p>
+    </div>
+  </div>
+
+  <div id="recover" class="hidden">
+    <h1>Nouveau mot de passe</h1>
+    <div class="card">
+      <label for="newpw">Nouveau mot de passe (8 caractères minimum)</label>
+      <input id="newpw" type="password" autocomplete="new-password">
+      <button class="btn" id="savepw" type="button">Enregistrer</button>
+      <p id="msg3"></p>
     </div>
   </div>
 
@@ -63,9 +82,18 @@
       <div class="row"><span>Nom d'utilisateur</span><b id="p-username"></b></div>
       <div class="row"><span>Budy ID</span><b id="p-budy"></b></div>
       <div class="row"><span>Rôle</span><b id="p-role"></b></div>
+      <div class="row"><span>Statut</span><b id="p-status"></b></div>
       <div class="row"><span>E-mail</span><b id="p-email"></b></div>
     </div>
-    <a class="btn sec" id="founder-link" href="fondateur.html" style="display:none;text-align:center;text-decoration:none;margin-bottom:0">Espace fondateur</a>
+    <div class="card">
+      <label for="newname">Changer mon nom d'utilisateur</label>
+      <input id="newname" maxlength="20" autocomplete="off">
+      <button class="btn" id="savename" type="button">Enregistrer le nom</button>
+    </div>
+    <div class="card hidden" id="wait"><b>Compte en attente de validation.</b><p style="margin-top:6px;color:var(--muted)">L'équipe Budy Play doit accepter ton compte avant que tu puisses utiliser la boutique, les messages et les compétitions. Reviens plus tard.</p></div>
+    <a class="btn sec" id="msg-link" href="messages.html" style="display:block;text-align:center;text-decoration:none">Messages et amis</a>
+    <a class="btn sec" id="staff-link" href="membres.html" style="display:none;text-align:center;text-decoration:none">Gérer les membres</a>
+    <a class="btn sec" id="founder-link" href="fondateur.html" style="display:none;text-align:center;text-decoration:none">Espace fondateur</a>
     <button class="btn sec" id="logout" type="button">Se déconnecter</button>
     <p id="msg2"></p>
   </div>
@@ -77,67 +105,74 @@
 (function () {
   var cfg = window.BUDY_CONFIG;
   var $ = function (id) { return document.getElementById(id); };
-  function show(text, kind) { $("msg").textContent = text || ""; $("msg").className = kind || ""; }
+  function say(id, text, kind) { $(id).textContent = text || ""; $(id).className = kind || ""; }
+  function show(text, kind) { say("msg", text, kind); }
 
-  if (!cfg || !window.supabase) {
-    show("Erreur : la configuration du site n'a pas pu être chargée.", "err");
-    return;
-  }
+  if (!cfg || !window.supabase) { show("Erreur : la configuration du site n'a pas pu être chargée.", "err"); return; }
 
   var db = window.supabase.createClient(cfg.SUPABASE_URL, cfg.SUPABASE_KEY);
   var mode = "in";
   var ROLES = { member: "Membre", moderator: "Modérateur", founder: "Fondateur" };
+  var STATUS = { pending: "En attente", approved: "Accepté", rejected: "Refusé" };
+  var recovering = /type=recovery/.test(location.hash);
 
   function setMode(m) {
     mode = m;
     $("tab-in").className = m === "in" ? "on" : "";
     $("tab-up").className = m === "up" ? "on" : "";
     $("username-wrap").className = m === "up" ? "" : "hidden";
+    $("forgot").className = m === "in" ? "link" : "link hidden";
     $("submit").textContent = m === "up" ? "Créer mon compte" : "Se connecter";
     $("password").setAttribute("autocomplete", m === "up" ? "new-password" : "current-password");
+    $("resend").className = "link hidden";
     show("");
   }
   $("tab-in").onclick = function () { setMode("in"); };
   $("tab-up").onclick = function () { setMode("up"); };
+  $("eye").onclick = function () {
+    var p = $("password"); var h = p.type === "password";
+    p.type = h ? "text" : "password"; $("eye").textContent = h ? "Cacher" : "Voir";
+  };
 
   function frError(e) {
     var m = ((e && e.message) || "").toLowerCase();
-    if (m.indexOf("invalid login") > -1) return "E-mail ou mot de passe incorrect.";
-    if (m.indexOf("not confirmed") > -1) return "Confirme d'abord ton e-mail (regarde ta boîte de réception).";
-    if (m.indexOf("already registered") > -1) return "Cet e-mail a déjà un compte.";
+    if (m.indexOf("invalid login") > -1) return "E-mail ou mot de passe incorrect. Pas encore de compte ? Appuie sur Inscription.";
+    if (m.indexOf("not confirmed") > -1) return "Confirme d'abord ton e-mail : ouvre le lien reçu dans ta boîte (regarde aussi les spams).";
+    if (m.indexOf("already registered") > -1) return "Cet e-mail a déjà un compte. Va dans Connexion.";
     if (m.indexOf("database error") > -1 || m.indexOf("username") > -1) return "Ce nom d'utilisateur n'est pas valide ou est déjà pris.";
-    if (m.indexOf("rate limit") > -1) return "Trop d'essais. Réessaie dans quelques minutes.";
+    if (m.indexOf("rate limit") > -1 || m.indexOf("seconds") > -1) return "Trop d'essais. Réessaie dans quelques minutes.";
+    if (m.indexOf("password") > -1) return "Mot de passe trop faible ou refusé. Essaie-en un plus long.";
     return "Une erreur est survenue : " + ((e && e.message) || "inconnue");
   }
 
   function showAuth() {
-    $("profile").className = "hidden";
-    $("auth").className = "";
-    $("password").value = "";
-    setMode("in");
+    $("profile").className = "hidden"; $("recover").className = "hidden"; $("auth").className = "";
+    $("password").value = ""; setMode("in");
   }
 
   async function showProfile(user) {
-    $("auth").className = "hidden";
-    $("profile").className = "";
-    $("msg2").textContent = "";
+    $("auth").className = "hidden"; $("recover").className = "hidden"; $("profile").className = "";
+    say("msg2", "");
     $("p-email").textContent = user.email || "";
-    $("p-username").textContent = "...";
-    $("p-budy").textContent = "...";
-    $("p-role").textContent = "...";
-    $("founder-link").style.display = "none";
-    var res = await db.from("profiles").select("username,budy_id,role").eq("id", user.id).maybeSingle();
+    $("p-username").textContent = "..."; $("p-budy").textContent = "..."; $("p-role").textContent = "...";
+    $("founder-link").style.display = "none"; $("staff-link").style.display = "none"; $("wait").className = "card hidden"; $("p-status").textContent = "...";
+    var res = await db.from("profiles").select("username,budy_id,role,status").eq("id", user.id).maybeSingle();
     if (res.error || !res.data) {
-      $("p-username").textContent = "-";
-      $("p-budy").textContent = "-";
-      $("p-role").textContent = "-";
-      $("msg2").textContent = "Ton profil n'a pas pu être chargé pour le moment.";
+      $("p-username").textContent = "-"; $("p-budy").textContent = "-"; $("p-role").textContent = "-";
+      say("msg2", "Ton profil n'a pas pu être chargé pour le moment.", "err");
       return;
     }
     $("p-username").textContent = res.data.username;
+    $("newname").value = res.data.username;
     $("p-budy").textContent = String(res.data.budy_id);
     $("p-role").textContent = ROLES[res.data.role] || res.data.role;
-    $("founder-link").style.display = res.data.role === "founder" ? "block" : "none";
+    var ok = res.data.status === "approved";
+    $("p-status").textContent = STATUS[res.data.status] || res.data.status;
+    $("wait").className = ok ? "card hidden" : "card";
+    if (res.data.status === "rejected") $("wait").textContent = "Ton compte a été refusé par l'équipe Budy Play.";
+    $("msg-link").style.display = ok ? "block" : "none";
+    $("founder-link").style.display = ok && res.data.role === "founder" ? "block" : "none";
+    $("staff-link").style.display = ok && (res.data.role === "founder" || res.data.role === "moderator") ? "block" : "none";
   }
 
   $("form").onsubmit = async function (ev) {
@@ -145,27 +180,23 @@
     var email = $("email").value.trim();
     var password = $("password").value;
     var username = $("username").value.trim();
-
     if (!email || !password) { show("Écris ton e-mail et ton mot de passe.", "err"); return; }
     if (mode === "up") {
-      if (!/^[A-Za-z0-9_]{3,20}$/.test(username)) {
-        show("Le nom d'utilisateur doit avoir 3 à 20 caractères : lettres, chiffres ou _.", "err");
-        return;
-      }
+      if (!/^[A-Za-z0-9_]{3,20}$/.test(username)) { show("Le nom d'utilisateur doit avoir 3 à 20 caractères : lettres, chiffres ou _.", "err"); return; }
       if (password.length < 8) { show("Le mot de passe doit avoir au moins 8 caractères.", "err"); return; }
     }
-
-    $("submit").disabled = true;
-    show("Un instant...");
+    $("submit").disabled = true; show("Un instant...");
     try {
       if (mode === "up") {
         var r = await db.auth.signUp({ email: email, password: password, options: { data: { username: username } } });
         if (r.error) throw r.error;
-        if (r.data && r.data.session) {
-          await showProfile(r.data.user);
+        if (r.data && r.data.session) { await showProfile(r.data.user); }
+        else if (r.data && r.data.user && r.data.user.identities && r.data.user.identities.length === 0) {
+          show("Cet e-mail a déjà un compte. Va dans Connexion.", "err");
         } else {
           setMode("in");
-          show("Compte créé. Vérifie ta boîte e-mail pour confirmer ton compte, puis connecte-toi.", "ok");
+          $("resend").className = "link";
+          show("Compte créé. Ouvre le lien reçu par e-mail pour confirmer, puis connecte-toi. Ensuite, l'équipe devra valider ton compte.", "ok");
         }
       } else {
         var r2 = await db.auth.signInWithPassword({ email: email, password: password });
@@ -174,17 +205,57 @@
       }
     } catch (e) {
       show(frError(e), "err");
+      if (((e && e.message) || "").toLowerCase().indexOf("not confirmed") > -1) $("resend").className = "link";
     }
     $("submit").disabled = false;
   };
 
-  $("logout").onclick = async function () {
-    await db.auth.signOut();
-    showAuth();
+  $("resend").onclick = async function () {
+    var email = $("email").value.trim();
+    if (!email) { show("Écris ton e-mail d'abord.", "err"); return; }
+    show("Envoi...");
+    var r = await db.auth.resend({ type: "signup", email: email });
+    show(r.error ? frError(r.error) : "E-mail de confirmation renvoyé. Regarde ta boîte (et les spams).", r.error ? "err" : "ok");
   };
 
+  $("forgot").onclick = async function () {
+    var email = $("email").value.trim();
+    if (!email) { show("Écris ton e-mail ci-dessus, puis appuie sur « Mot de passe oublié ».", "err"); return; }
+    show("Envoi...");
+    var r = await db.auth.resetPasswordForEmail(email, { redirectTo: location.href.split("#")[0].split("?")[0] });
+    show(r.error ? frError(r.error) : "Si cet e-mail a un compte, un lien pour changer le mot de passe vient d'être envoyé.", r.error ? "err" : "ok");
+  };
+
+  $("savepw").onclick = async function () {
+    var p = $("newpw").value;
+    if (p.length < 8) { say("msg3", "8 caractères minimum.", "err"); return; }
+    var r = await db.auth.updateUser({ password: p });
+    if (r.error) { say("msg3", frError(r.error), "err"); return; }
+    say("msg3", "Mot de passe changé.", "ok");
+    var s = await db.auth.getSession();
+    if (s.data && s.data.session) { history.replaceState(null, "", location.pathname); recovering = false; await showProfile(s.data.session.user); }
+  };
+
+  $("savename").onclick = async function () {
+    var n = $("newname").value.trim();
+    if (!/^[A-Za-z0-9_]{3,20}$/.test(n)) { say("msg2", "3 à 20 caractères : lettres, chiffres ou _.", "err"); return; }
+    var s = await db.auth.getSession(); var u = s.data && s.data.session && s.data.session.user;
+    if (!u) { showAuth(); return; }
+    $("savename").disabled = true;
+    var r = await db.from("profiles").update({ username: n }).eq("id", u.id);
+    $("savename").disabled = false;
+    if (r.error) { say("msg2", "Ce nom est déjà pris ou n'est pas valide.", "err"); return; }
+    $("p-username").textContent = n; say("msg2", "Nom enregistré.", "ok");
+  };
+
+  $("logout").onclick = async function () { await db.auth.signOut(); showAuth(); };
+
+  db.auth.onAuthStateChange(function (ev) {
+    if (ev === "PASSWORD_RECOVERY") { recovering = true; $("auth").className = "hidden"; $("profile").className = "hidden"; $("recover").className = ""; }
+  });
   db.auth.getSession().then(function (r) {
-    if (r.data && r.data.session) { showProfile(r.data.session.user); }
+    if (recovering) { $("auth").className = "hidden"; $("recover").className = ""; return; }
+    if (r.data && r.data.session) showProfile(r.data.session.user);
   });
 })();
 </script>
