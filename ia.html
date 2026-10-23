@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Assistant IA - Budy Play</title>
+<style>
+  :root { --bg:#0b0b0c; --card:#161718; --line:#26282a; --neon:#39ff14; --text:#fff; --muted:#9a9ea3; --err:#ff5a5a; }
+  * { box-sizing:border-box; margin:0; padding:0; }
+  body { background:var(--bg); color:var(--text); font-family:system-ui,sans-serif; line-height:1.4; }
+  header { padding:16px; border-bottom:1px solid var(--line); display:flex; justify-content:space-between; align-items:center; }
+  header a { color:var(--text); text-decoration:none; font-size:1.4rem; font-weight:800; }
+  header a span { color:var(--neon); }
+  header a.s { font-size:.95rem; font-weight:600; color:var(--muted); }
+  main { max-width:520px; margin:0 auto; padding:16px 16px 24px; }
+  h1 { font-size:1.5rem; margin-bottom:6px; }
+  .sub { color:var(--muted); font-size:.9rem; margin-bottom:12px; }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:12px; padding:14px; margin-bottom:14px; }
+  .btn { padding:10px 14px; border:0; border-radius:10px; background:var(--neon); color:#000; font-weight:700; font-size:.95rem; text-decoration:none; display:inline-block; }
+  .btn:disabled { opacity:.5; }
+  .hidden { display:none; }
+  #chat { display:flex; flex-direction:column; height:calc(100vh - 190px); min-height:340px; }
+  #bubbles { flex:1; overflow-y:auto; display:flex; flex-direction:column; gap:8px; padding:6px 2px; }
+  .b { max-width:85%; padding:8px 12px; border-radius:14px; background:var(--card); border:1px solid var(--line); word-wrap:break-word; white-space:pre-wrap; }
+  .b.me { align-self:flex-end; background:#12331a; border-color:var(--neon); }
+  .b.err { border-color:var(--err); color:var(--err); }
+  .b.wait { color:var(--muted); font-style:italic; }
+  #quota { color:var(--muted); font-size:.85rem; margin:6px 0; min-height:1.2em; }
+  #send { display:flex; gap:8px; margin-top:8px; }
+  #send input { flex:1; width:100%; padding:12px; border-radius:10px; border:1px solid var(--line); background:#0b0b0c; color:var(--text); font-size:1rem; }
+  #send input:focus { outline:none; border-color:var(--neon); }
+  .note { color:var(--muted); font-size:.8rem; margin-top:8px; }
+</style>
+</head>
+<body>
+<header><a href="index.html">Budy <span>Play</span></a><a class="s" href="compte.html">Compte</a></header>
+<main>
+  <div id="guest" class="hidden card">
+    <h1>Assistant IA</h1>
+    <p>Connecte-toi pour utiliser l'assistant.</p>
+    <p style="margin-top:12px"><a class="btn" href="compte.html">Se connecter</a></p>
+  </div>
+
+  <div id="waiting" class="hidden card">
+    <h1>Assistant IA</h1>
+    <p>Ton compte doit être accepté par l'équipe Budy Play avant d'utiliser l'assistant.</p>
+    <p style="margin-top:12px"><a class="btn" href="compte.html">Voir mon compte</a></p>
+  </div>
+
+  <div id="app" class="hidden">
+    <h1>Assistant IA</h1>
+    <p class="sub">Pose-moi une question sur tes jeux ou sur le site. Je suis une IA et je peux me tromper.</p>
+    <div id="chat">
+      <div id="bubbles"></div>
+      <p id="quota"></p>
+      <form id="send">
+        <input id="q" maxlength="500" placeholder="Écris ta question..." autocomplete="off">
+        <button class="btn" id="go" type="submit">Envoyer</button>
+      </form>
+    </div>
+    <p class="note">Ne partage jamais de mot de passe ni de code MonCash. Tes messages privés ne sont jamais envoyés à l'IA.</p>
+  </div>
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="config.js"></script>
+<script>
+(function () {
+  var cfg = window.BUDY_CONFIG || {};
+  var $ = function (id) { return document.getElementById(id); };
+  var db = window.supabase.createClient(cfg.SUPABASE_URL, cfg.SUPABASE_KEY);
+  var history = [];
+
+  function bubble(text, cls) {
+    var b = document.createElement("div");
+    b.className = "b" + (cls ? " " + cls : "");
+    b.textContent = text;
+    var box = $("bubbles"); box.appendChild(b); box.scrollTop = box.scrollHeight;
+    return b;
+  }
+  function quota(used, limit) {
+    $("quota").textContent = limit ? "Questions aujourd'hui : " + used + " / " + limit : "";
+  }
+  function loadQuota() {
+    db.rpc("ai_quota").then(function (r) { if (!r.error && r.data) quota(r.data.used, r.data.limit); });
+  }
+  function errText(err) {
+    // La fonction renvoie un message clair en français dans le corps de la réponse.
+    var ctx = err && err.context;
+    if (ctx && typeof ctx.json === "function") {
+      return ctx.json().then(function (j) { return (j && j.error) || "L'assistant ne répond pas pour le moment."; })
+        .catch(function () { return "L'assistant ne répond pas pour le moment."; });
+    }
+    return Promise.resolve("L'assistant ne répond pas pour le moment.");
+  }
+
+  $("send").onsubmit = function (e) {
+    e.preventDefault();
+    var t = $("q").value.trim(); if (!t) return;
+    $("go").disabled = true; $("q").value = "";
+    bubble(t, "me");
+    history.push({ role: "user", content: t });
+    var wait = bubble("Je réfléchis...", "wait");
+    db.functions.invoke("assistant-ia", { body: { messages: history.slice(-6) } }).then(function (r) {
+      wait.parentNode.removeChild(wait);
+      if (r.error || !r.data || !r.data.reply) {
+        history.pop();
+        return errText(r.error).then(function (m) { bubble(m, "err"); loadQuota(); });
+      }
+      history.push({ role: "assistant", content: r.data.reply });
+      bubble(r.data.reply);
+      quota(r.data.used, r.data.limit);
+    }).catch(function () {
+      wait.parentNode.removeChild(wait); history.pop();
+      bubble("Pas de connexion. Réessaie.", "err");
+    }).then(function () { $("go").disabled = false; $("q").focus(); });
+  };
+
+  db.auth.getSession().then(function (s) {
+    var sess = s.data && s.data.session;
+    if (!sess) { $("guest").className = "card"; return; }
+    db.rpc("my_status").then(function (st) {
+      if (st.data !== "approved") { $("waiting").className = "card"; return; }
+      $("app").className = "";
+      bubble("Salut ! Je suis l'assistant de Budy Play. Que veux-tu savoir ?");
+      loadQuota();
+    });
+  });
+})();
+</script>
+</body>
+</html>
