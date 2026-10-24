@@ -13,6 +13,9 @@
   .logo span { color:var(--neon); }
   nav { display:flex; gap:8px; }
   nav a { color:var(--text); text-decoration:none; font-size:.9rem; padding:6px 10px; border-radius:8px; border:1px solid var(--line); }
+  nav { flex-wrap:wrap; }
+  header { flex-wrap:wrap; }
+  nav a { display:inline-flex; align-items:center; }
   nav a.on { border-color:var(--neon); color:var(--neon); }
   main { max-width:960px; margin:0 auto; padding:20px 16px 40px; }
   h1 { font-size:1.6rem; margin-bottom:6px; }
@@ -25,6 +28,8 @@
   .name { font-size:1.05rem; font-weight:700; }
   .studio { color:var(--muted); font-size:.85rem; }
   .badge { align-self:flex-start; margin-top:auto; padding:2px 10px; font-size:.75rem; color:var(--neon); border:1px solid var(--neon); border-radius:20px; }
+  a.card { color:inherit; text-decoration:none; }
+  a.card:hover, a.card:focus { border-color:var(--neon); }
   .note { color:var(--muted); font-size:.8rem; margin-top:24px; }
 </style>
 </head>
@@ -32,9 +37,9 @@
 <header>
   <a class="logo" href="index.html">Budy <span>Play</span></a>
   <nav>
-    <a href="index.html">Accueil</a>
-    <a href="catalogue.html" class="on">Jeux</a>
-    <a href="compte.html">Compte</a>
+    <a href="index.html" data-i="home">Accueil</a>
+    <a href="catalogue.html" class="on" data-i="gamepad">Jeux</a>
+    <a href="compte.html" data-i="user">Compte</a>
   </nav>
 </header>
 <main>
@@ -42,43 +47,59 @@
   <p class="sub">Les jeux de la communauté Budy Play.</p>
   <div class="grid">
 
-    <div class="card">
+    <a class="card game" data-pkg="com.dts.freefireth" href="https://play.google.com/store/apps/details?id=com.dts.freefireth">
       <div class="pic"><img src="jeu-freefire.jpg" alt="Free Fire" loading="lazy"></div>
-      <div class="info"><div class="name">Free Fire</div><div class="studio">Garena</div><span class="badge">Lancement bientôt</span></div>
-    </div>
+      <div class="info"><div class="name">Free Fire</div><div class="studio">Garena</div><span class="badge">Ouvrir ou installer</span></div>
+    </a>
 
-    <div class="card">
+    <a class="card game" data-pkg="com.mojang.minecraftpe" href="https://play.google.com/store/apps/details?id=com.mojang.minecraftpe">
       <div class="pic"><img src="jeu-minecraft.jpg" alt="Minecraft" loading="lazy"></div>
-      <div class="info"><div class="name">Minecraft</div><div class="studio">Mojang Studios</div><span class="badge">Lancement bientôt</span></div>
-    </div>
+      <div class="info"><div class="name">Minecraft</div><div class="studio">Mojang Studios</div><span class="badge">Ouvrir ou installer</span></div>
+    </a>
 
-    <div class="card">
+    <a class="card game" data-pkg="com.epicgames.fortnite" href="https://play.google.com/store/apps/details?id=com.epicgames.fortnite">
       <div class="pic"><img src="jeu-fortnite.jpg" alt="Fortnite" loading="lazy"></div>
-      <div class="info"><div class="name">Fortnite</div><div class="studio">Epic Games</div><span class="badge">Lancement bientôt</span></div>
-    </div>
+      <div class="info"><div class="name">Fortnite</div><div class="studio">Epic Games</div><span class="badge">Ouvrir ou installer</span></div>
+    </a>
 
-    <div class="card">
+    <a class="card game" data-pkg="com.roblox.client" href="https://play.google.com/store/apps/details?id=com.roblox.client">
       <div class="pic"><img src="jeu-roblox.jpg" alt="Roblox" loading="lazy"></div>
-      <div class="info"><div class="name">Roblox</div><div class="studio">Roblox Corporation</div><span class="badge">Lancement bientôt</span></div>
-    </div>
+      <div class="info"><div class="name">Roblox</div><div class="studio">Roblox Corporation</div><span class="badge">Ouvrir ou installer</span></div>
+    </a>
 
-    <div class="card">
+    <a class="card game" data-pkg="com.ea.gp.fifamobile" href="https://play.google.com/store/apps/details?id=com.ea.gp.fifamobile">
       <div class="pic"><img src="jeu-eafc.jpg" alt="EA SPORTS FC" loading="lazy"></div>
-      <div class="info"><div class="name">EA SPORTS FC</div><div class="studio">Electronic Arts</div><span class="badge">Lancement bientôt</span></div>
-    </div>
+      <div class="info"><div class="name">EA SPORTS FC</div><div class="studio">Electronic Arts</div><span class="badge">Ouvrir ou installer</span></div>
+    </a>
 
-    <div class="card">
+    <a class="card game" data-pkg="com.jarvigames.viceonline" href="https://play.google.com/store/apps/details?id=com.jarvigames.viceonline">
       <div class="pic"><img src="jeu-flexcity.jpg" alt="Flex City" loading="lazy"></div>
-      <div class="info"><div class="name">Flex City</div><div class="studio">Jarvi Games</div><span class="badge">Lancement bientôt</span></div>
-    </div>
+      <div class="info"><div class="name">Flex City</div><div class="studio">Jarvi Games</div><span class="badge">Ouvrir ou installer</span></div>
+    </a>
 
-    <div class="card">
+    <a class="card game" data-pkg="com.Chillgaming.oneState" href="https://play.google.com/store/apps/details?id=com.Chillgaming.oneState">
       <div class="pic"><img src="jeu-onestate.jpg" alt="OneState RP" loading="lazy"></div>
-      <div class="info"><div class="name">OneState RP</div><div class="studio">ChillBase</div><span class="badge">Lancement bientôt</span></div>
-    </div>
+      <div class="info"><div class="name">OneState RP</div><div class="studio">ChillBase</div><span class="badge">Ouvrir ou installer</span></div>
+    </a>
 
   </div>
-  <p class="note">Les noms, logos et images des jeux appartiennent à leurs studios respectifs. Ils sont affichés uniquement pour identifier chaque jeu.</p>
+  <p class="note">Appuie sur un jeu : s'il est installé sur ton téléphone Android, il s'ouvre, sinon la page Play Store s'ouvre pour l'installer. Les noms, logos et images des jeux appartiennent à leurs studios respectifs. Ils sont affichés uniquement pour identifier chaque jeu.</p>
 </main>
+<script>
+(function () {
+  /* Sur Android : ouvre le jeu s'il est installé, sinon la page Play Store.
+     Ailleurs (ordinateur, iPhone) : le lien normal vers Google Play reste en place. */
+  if (!/Android/i.test(navigator.userAgent)) return;
+  var cards = document.querySelectorAll("a.game");
+  for (var i = 0; i < cards.length; i++) {
+    var pkg = cards[i].getAttribute("data-pkg");
+    var play = "https://play.google.com/store/apps/details?id=" + pkg;
+    cards[i].setAttribute("href",
+      "intent://launch#Intent;action=android.intent.action.MAIN;category=android.intent.category.LAUNCHER;package=" + pkg +
+      ";S.browser_fallback_url=" + encodeURIComponent(play) + ";end");
+  }
+})();
+</script>
+<script src="ui.js"></script>
 </body>
 </html>
