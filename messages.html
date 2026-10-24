@@ -48,6 +48,10 @@
   #send { display:flex; gap:8px; margin-top:8px; }
   #send input { flex:1; }
   .note { color:var(--muted); font-size:.85rem; margin-top:8px; }
+  #callbar { background:var(--card); border:1px solid var(--line); border-radius:12px; padding:10px; margin-bottom:8px; }
+  #callbar .row { display:flex; gap:8px; flex-wrap:wrap; align-items:center; }
+  #callbar a.btn { text-decoration:none; }
+  #callbar .note { margin-top:6px; }
 </style>
 </head>
 <body>
@@ -105,6 +109,10 @@
       <div id="chat-head">
         <button class="btn sec" id="back" type="button" data-i="back">← Retour</button>
         <span id="chat-name"></span>
+      </div>
+      <div id="callbar" class="hidden">
+        <div class="row" id="callrow"></div>
+        <p class="note" id="callnote"></p>
       </div>
       <div id="bubbles"></div>
       <form id="send">
@@ -165,7 +173,7 @@
         left.appendChild(el("div", "sub", c.last_body || ""));
         it.appendChild(left);
         if (Number(c.unread) > 0) it.appendChild(el("span", "dot", String(c.unread)));
-        it.onclick = function () { openChat(c.conversation_id, c.other_username); };
+        it.onclick = function () { openChat(c.conversation_id, c.other_username, c.other_id); };
         box.appendChild(it);
       });
       var b = $("b-conv"); b.textContent = total ? String(total) : ""; b.className = total ? "dot" : "";
@@ -235,7 +243,7 @@
   function startWith(uid, name) {
     db.rpc("start_conversation", { p_other: uid }).then(function (r) {
       if (r.error) { say(nice(r.error.message)); return; }
-      openChat(r.data, name);
+      openChat(r.data, name, uid);
     });
   }
 
@@ -246,10 +254,52 @@
     b.appendChild(el("small", null, hhmm(m.created_at)));
     var box = $("bubbles"); box.appendChild(b); box.scrollTop = box.scrollHeight;
   }
-  function openChat(convId, name) {
-    currentConv = convId; shown = {};
+  /* ---------- WhatsApp et appels (numéro partagé volontairement) ---------- */
+  var currentOther = null;
+  function loadCallBar() {
+    var other = currentOther, bar = $("callbar"), row = $("callrow"), note = $("callnote");
+    bar.className = "hidden"; row.textContent = ""; note.textContent = "";
+    if (!other) return;
+    db.rpc("phone_status", { p_user: other }).then(function (r) {
+      if (other !== currentOther || r.error || !r.data) return;
+      var st = r.data, name = $("chat-name").textContent;
+      bar.className = "";
+      if (!st.i_have_phone) {
+        var a = el("a", "btn sec", "Ajouter mon numéro"); a.href = "appels.html";
+        row.appendChild(a);
+        note.textContent = "Ajoute ton numéro (privé) pour pouvoir le partager avec " + name + ".";
+      } else {
+        var sh = el("button", st.i_share ? "btn no" : "btn sec", st.i_share ? "Arrêter de partager mon numéro" : "Partager mon numéro avec " + name);
+        sh.type = "button";
+        sh.onclick = function () {
+          if (!st.i_share && !confirm("Partager ton numéro avec " + name + " seulement ? Tu pourras arrêter quand tu veux.")) return;
+          sh.disabled = true;
+          db.rpc("share_phone_with", { p_user: other, p_share: !st.i_share }).then(function (x) {
+            if (x.error || !x.data || !x.data.ok) alert("Impossible pour le moment.");
+            loadCallBar();
+          });
+        };
+        row.appendChild(sh);
+      }
+      if (st.they_share) {
+        db.rpc("get_phone_of", { p_user: other }).then(function (g) {
+          if (other !== currentOther || g.error || !g.data) return;
+          var wa = el("a", "btn", "WhatsApp"); wa.href = "https://wa.me/" + g.data; wa.target = "_blank"; wa.rel = "noopener noreferrer";
+          var tel = el("a", "btn", "Appeler"); tel.href = "tel:+" + g.data;
+          row.insertBefore(tel, row.firstChild); row.insertBefore(wa, row.firstChild);
+          note.textContent = name + " a partagé son numéro avec toi. Appeler ouvre le Téléphone de ton appareil.";
+        });
+      } else if (st.i_have_phone) {
+        note.textContent = name + " n'a pas partagé son numéro avec toi.";
+      }
+    });
+  }
+
+  function openChat(convId, name, otherId) {
+    currentConv = convId; shown = {}; currentOther = otherId || null;
     $("list-view").className = "hidden"; $("chat").className = "";
     $("chat-name").textContent = name; $("bubbles").textContent = "";
+    loadCallBar();
     db.from("messages").select("id,sender_id,body,created_at").eq("conversation_id", convId)
       .order("created_at", { ascending: true }).limit(200).then(function (r) {
         (r.data || []).forEach(addBubble);
@@ -263,7 +313,7 @@
   }
   $("back").onclick = function () {
     if (channel) { db.removeChannel(channel); channel = null; }
-    currentConv = null; $("chat").className = "hidden"; $("list-view").className = ""; tab("conv"); loadConvs();
+    currentConv = null; currentOther = null; $("callbar").className = "hidden"; $("chat").className = "hidden"; $("list-view").className = ""; tab("conv"); loadConvs();
   };
   $("send").onsubmit = function (e) {
     e.preventDefault();
