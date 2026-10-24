@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>WhatsApp et appels - Budy Play</title>
+<style>
+  :root { --bg:#0b0b0c; --card:#161718; --line:#26282a; --neon:#39ff14; --text:#fff; --muted:#9a9ea3; --err:#ff5a5a; }
+  * { box-sizing:border-box; margin:0; padding:0; }
+  body { background:var(--bg); color:var(--text); font-family:system-ui,sans-serif; line-height:1.4; }
+  header { padding:16px; border-bottom:1px solid var(--line); display:flex; justify-content:space-between; align-items:center; }
+  header a { color:var(--text); text-decoration:none; font-size:1.4rem; font-weight:800; }
+  header a span { color:var(--neon); }
+  header a.s { font-size:.95rem; font-weight:600; color:var(--muted); }
+  main { max-width:520px; margin:0 auto; padding:16px 16px 40px; }
+  h1 { font-size:1.5rem; margin-bottom:12px; }
+  h2 { font-size:1.05rem; margin-bottom:10px; color:var(--neon); }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:12px; padding:14px; margin-bottom:14px; }
+  .btn { padding:10px 14px; border:0; border-radius:10px; background:var(--neon); color:#000; font-weight:700; font-size:.95rem; text-decoration:none; display:inline-flex; align-items:center; justify-content:center; }
+  .btn.no { background:transparent; border:1px solid var(--err); color:var(--err); }
+  .btn:disabled { opacity:.5; }
+  .hidden { display:none; }
+  input { width:100%; padding:12px; border-radius:10px; border:1px solid var(--line); background:#0b0b0c; color:var(--text); font-size:1rem; margin:8px 0; }
+  input:focus { outline:none; border-color:var(--neon); }
+  p { margin-bottom:8px; }
+  .note { color:var(--muted); font-size:.85rem; }
+  #msg { min-height:1.2em; font-size:.95rem; margin-top:8px; }
+  .err { color:var(--err); } .ok { color:var(--neon); }
+  .num { font-size:1.2rem; font-weight:800; color:var(--neon); }
+  .row { display:flex; gap:8px; flex-wrap:wrap; }
+</style>
+</head>
+<body>
+<header><a href="index.html">Budy <span>Play</span></a><a class="s" href="compte.html">Compte</a></header>
+<main>
+  <div id="guest" class="hidden card">
+    <h1>WhatsApp et appels</h1>
+    <p>Connecte-toi pour gérer ton numéro.</p>
+    <p style="margin-top:12px"><a class="btn" href="compte.html">Se connecter</a></p>
+  </div>
+
+  <div id="waiting" class="hidden card">
+    <h1>WhatsApp et appels</h1>
+    <p>Ton compte doit être accepté par l'équipe Budy Play avant d'utiliser cette page.</p>
+    <p style="margin-top:12px"><a class="btn" href="compte.html">Voir mon compte</a></p>
+  </div>
+
+  <div id="app" class="hidden">
+    <h1>WhatsApp et appels</h1>
+
+    <div class="card">
+      <h2>Comment ça marche</h2>
+      <p>1. Tu enregistres ton numéro ici. Il reste privé : personne ne le voit.</p>
+      <p>2. Dans une discussion, tu choisis toi-même de le partager avec cette personne seulement.</p>
+      <p>3. Si une personne partage son numéro avec toi, les boutons WhatsApp et Appeler apparaissent dans votre discussion.</p>
+      <p class="note">Tu peux arrêter le partage à tout moment, ou effacer ton numéro.</p>
+    </div>
+
+    <div class="card">
+      <h2>Mon numéro</h2>
+      <p id="cur" class="hidden">Numéro enregistré : <span class="num" id="curnum"></span></p>
+      <form id="form">
+        <input id="num" type="tel" inputmode="tel" maxlength="20" placeholder="Avec l'indicatif, ex : 509 3712 3456" autocomplete="tel">
+        <button class="btn" id="save" type="submit">Enregistrer mon numéro</button>
+      </form>
+      <p class="note" style="margin-top:8px">Écris le numéro avec l'indicatif du pays (pour Haïti : 509 devant le numéro).</p>
+      <p id="msg"></p>
+      <p id="delwrap" class="hidden"><button class="btn no" id="del" type="button">Effacer mon numéro</button></p>
+    </div>
+
+    <div class="card">
+      <p><a class="btn" href="messages.html">Aller aux messages</a></p>
+      <p class="note">Le bouton Appeler ouvre l'application Téléphone de ton appareil. Si ton appareil ne peut pas appeler, utilise WhatsApp.</p>
+    </div>
+  </div>
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="config.js"></script>
+<script>
+(function () {
+  var cfg = window.BUDY_CONFIG || {};
+  var $ = function (id) { return document.getElementById(id); };
+  var db = window.supabase.createClient(cfg.SUPABASE_URL, cfg.SUPABASE_KEY);
+
+  function say(t, ok) { var e = $("msg"); e.textContent = t || ""; e.className = ok ? "ok" : "err"; }
+  function show(n) {
+    $("cur").className = n ? "" : "hidden";
+    $("delwrap").className = n ? "" : "hidden";
+    $("curnum").textContent = n ? "+" + n : "";
+  }
+  function load() {
+    db.rpc("my_phone").then(function (r) { show(r.error ? null : r.data); });
+  }
+
+  $("form").onsubmit = function (e) {
+    e.preventDefault();
+    var digits = $("num").value.replace(/\D/g, "");
+    if (digits.length < 8) { say("Numéro trop court."); return; }
+    if (digits.length === 8) { say("Ajoute l'indicatif du pays devant (Haïti : 509)."); return; }
+    $("save").disabled = true; say("");
+    db.rpc("set_my_phone", { p_number: digits }).then(function (r) {
+      $("save").disabled = false;
+      if (r.error) { say("Impossible pour le moment."); return; }
+      var d = r.data || {};
+      if (!d.ok) {
+        say(d.reason === "format" ? "Numéro invalide (8 à 15 chiffres, avec l'indicatif)." :
+            d.reason === "pending" ? "Ton compte doit d'abord être accepté." : "Connecte-toi d'abord.");
+        return;
+      }
+      $("num").value = ""; say("Numéro enregistré. Il reste privé.", true); load();
+    });
+  };
+
+  $("del").onclick = function () {
+    if (!confirm("Effacer ton numéro ? Tous tes partages seront arrêtés.")) return;
+    $("del").disabled = true;
+    db.rpc("clear_my_phone").then(function (r) {
+      $("del").disabled = false;
+      if (r.error) { say("Impossible pour le moment."); return; }
+      say("Numéro effacé, partages arrêtés.", true); load();
+    });
+  };
+
+  db.auth.getSession().then(function (s) {
+    var sess = s.data && s.data.session;
+    if (!sess) { $("guest").className = "card"; return; }
+    db.rpc("my_status").then(function (st) {
+      if (st.data !== "approved") { $("waiting").className = "card"; return; }
+      $("app").className = "";
+      load();
+    });
+  });
+})();
+</script>
+<script src="ui.js"></script>
+</body>
+</html>
