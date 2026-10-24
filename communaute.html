@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Communauté - Budy Play</title>
+<style>
+  :root { --bg:#0b0b0c; --card:#161718; --line:#26282a; --neon:#39ff14; --text:#fff; --muted:#9a9ea3; --err:#ff5a5a; }
+  * { box-sizing:border-box; margin:0; padding:0; }
+  body { background:var(--bg); color:var(--text); font-family:system-ui,sans-serif; line-height:1.4; }
+  header { padding:16px; border-bottom:1px solid var(--line); display:flex; justify-content:space-between; align-items:center; }
+  header a { color:var(--text); text-decoration:none; font-size:1.4rem; font-weight:800; }
+  header a span { color:var(--neon); }
+  header a.s { font-size:.95rem; font-weight:600; color:var(--muted); }
+  main { max-width:520px; margin:0 auto; padding:16px 16px 40px; }
+  h1 { font-size:1.5rem; margin-bottom:12px; }
+  h2 { font-size:1.05rem; margin-bottom:10px; color:var(--neon); }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:12px; padding:14px; margin-bottom:14px; }
+  .btn { padding:10px 14px; border:0; border-radius:10px; background:var(--neon); color:#000; font-weight:700; font-size:.95rem; text-decoration:none; display:inline-block; text-align:center; }
+  .btn.sec { background:transparent; border:1px solid var(--line); color:var(--text); }
+  .btn.no { background:transparent; border:1px solid var(--err); color:var(--err); }
+  .btn:disabled { opacity:.5; }
+  .hidden { display:none; }
+  .item { display:flex; justify-content:space-between; align-items:center; gap:10px; padding:10px 0; border-bottom:1px solid var(--line); }
+  .item:last-child { border-bottom:0; }
+  .who { font-weight:700; }
+  .sub { color:var(--muted); font-size:.85rem; }
+  .acts { display:flex; gap:8px; flex-wrap:wrap; justify-content:flex-end; }
+  .empty { color:var(--muted); padding:4px 0; }
+  .live-dot { display:inline-block; width:9px; height:9px; border-radius:50%; background:var(--err); margin-right:6px; }
+  input, select { width:100%; padding:12px; border-radius:10px; border:1px solid var(--line); background:#0b0b0c; color:var(--text); font-size:1rem; margin-top:8px; }
+  input:focus, select:focus { outline:none; border-color:var(--neon); }
+  .steps { color:var(--muted); font-size:.9rem; margin:8px 0; }
+  .steps b { color:var(--text); }
+  #msg { min-height:1.2em; margin-top:8px; font-size:.95rem; }
+  .err { color:var(--err); } .ok { color:var(--neon); }
+  .links { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+  .note { color:var(--muted); font-size:.8rem; margin-top:8px; }
+</style>
+</head>
+<body>
+<header><a href="index.html">Budy <span>Play</span></a><a class="s" href="compte.html">Compte</a></header>
+<main>
+  <h1>Communauté</h1>
+
+  <div id="guest" class="hidden card">
+    <p>Connecte-toi pour voir les lives de la communauté.</p>
+    <p style="margin-top:12px"><a class="btn" href="compte.html">Se connecter</a></p>
+  </div>
+
+  <div id="waiting" class="hidden card">
+    <p>Ton compte doit être accepté par l'équipe Budy Play avant d'utiliser la communauté.</p>
+    <p style="margin-top:12px"><a class="btn" href="compte.html">Voir mon compte</a></p>
+  </div>
+
+  <div id="app" class="hidden">
+    <div class="card">
+      <h2>En live maintenant</h2>
+      <div id="lives"><p class="empty">Chargement...</p></div>
+    </div>
+
+    <div class="card">
+      <h2>Faire un live TikTok</h2>
+      <p class="steps"><b>1.</b> Ouvre TikTok et lance ton live de jeu.</p>
+      <a class="btn" href="https://www.tiktok.com/" target="_blank" rel="noopener noreferrer">Ouvrir TikTok</a>
+      <p class="steps" style="margin-top:12px"><b>2.</b> Dans TikTok, copie le lien de ton live (Partager, puis Copier le lien) et annonce-le ici :</p>
+      <form id="form">
+        <select id="game">
+          <option value="Free Fire">Free Fire</option>
+          <option value="Minecraft">Minecraft</option>
+          <option value="Fortnite">Fortnite</option>
+          <option value="Roblox">Roblox</option>
+          <option value="EA SPORTS FC">EA SPORTS FC</option>
+          <option value="Flex City">Flex City</option>
+          <option value="OneState RP">OneState RP</option>
+          <option value="Autre jeu">Autre jeu</option>
+        </select>
+        <input id="title" maxlength="60" placeholder="Titre (facultatif)" autocomplete="off">
+        <input id="url" type="url" inputmode="url" placeholder="Lien de ton live TikTok" autocomplete="off" required>
+        <p style="margin-top:12px"><button class="btn" id="go" type="submit">Annoncer mon live</button></p>
+      </form>
+      <p id="msg"></p>
+      <p class="note">Réservé aux comptes TikTok qui ont accès au live. L'annonce disparaît toute seule après 6 heures.</p>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Raccourcis</h2>
+    <div class="links">
+      <a class="btn sec" href="messages.html">Messages et amis</a>
+      <a class="btn sec" href="competitions.html">Compétitions</a>
+      <a class="btn sec" href="ia.html">Assistant IA</a>
+      <a class="btn sec" href="catalogue.html">Jeux</a>
+    </div>
+  </div>
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="config.js"></script>
+<script>
+(function () {
+  var cfg = window.BUDY_CONFIG || {};
+  var $ = function (id) { return document.getElementById(id); };
+  var db = window.supabase.createClient(cfg.SUPABASE_URL, cfg.SUPABASE_KEY);
+  var isStaff = false, timer = null;
+
+  function el(tag, cls, txt) { var e = document.createElement(tag); if (cls) e.className = cls; if (txt != null) e.textContent = txt; return e; }
+  function say(t, ok) { var e = $("msg"); e.textContent = t || ""; e.className = ok ? "ok" : "err"; }
+  function ago(d) {
+    var m = Math.max(0, Math.round((Date.now() - new Date(d).getTime()) / 60000));
+    if (m < 1) return "à l'instant";
+    if (m < 60) return "il y a " + m + " min";
+    return "il y a " + Math.floor(m / 60) + " h";
+  }
+  var WHY = {
+    url: "Le lien doit venir de TikTok (il commence par https://www.tiktok.com/ ou https://vm.tiktok.com/).",
+    game: "Choisis un jeu dans la liste.",
+    pending: "Ton compte doit d'abord être accepté par l'équipe.",
+    login: "Connecte-toi d'abord."
+  };
+
+  function loadLives() {
+    db.rpc("lives_now").then(function (r) {
+      var box = $("lives"); box.textContent = "";
+      if (r.error) { box.appendChild(el("p", "empty", "Impossible de charger les lives.")); return; }
+      var rows = r.data || [];
+      if (!rows.length) { box.appendChild(el("p", "empty", "Personne n'est en live pour le moment.")); return; }
+      rows.forEach(function (x) {
+        var it = el("div", "item");
+        var left = el("div");
+        var who = el("div", "who");
+        who.appendChild(el("span", "live-dot"));
+        who.appendChild(document.createTextNode(x.username + "  #" + x.budy_id));
+        left.appendChild(who);
+        left.appendChild(el("div", "sub", x.game + (x.title ? " · " + x.title : "") + " · " + ago(x.started_at)));
+        it.appendChild(left);
+        var a = el("div", "acts");
+        if (/^https:\/\//i.test(x.tiktok_url)) {
+          var go = el("a", "btn", "Voir le live");
+          go.href = x.tiktok_url; go.target = "_blank"; go.rel = "noopener noreferrer";
+          a.appendChild(go);
+        }
+        if (x.mine) {
+          var st = el("button", "btn no", "Arrêter"); st.type = "button";
+          st.onclick = function () { st.disabled = true; db.rpc("stop_live").then(function () { say("Ton live est retiré de la liste.", true); loadLives(); }); };
+          a.appendChild(st);
+        } else if (isStaff) {
+          var rm = el("button", "btn no", "Retirer"); rm.type = "button";
+          rm.onclick = function () { rm.disabled = true; db.rpc("remove_live", { p_id: x.id }).then(function () { loadLives(); }); };
+          a.appendChild(rm);
+        }
+        it.appendChild(a); box.appendChild(it);
+      });
+    });
+  }
+
+  $("form").onsubmit = function (e) {
+    e.preventDefault();
+    var url = $("url").value.trim(); if (!url) return;
+    $("go").disabled = true; say("");
+    db.rpc("go_live", { p_url: url, p_game: $("game").value, p_title: $("title").value.trim() }).then(function (r) {
+      $("go").disabled = false;
+      if (r.error) { say("Action impossible pour le moment."); return; }
+      if (!r.data || !r.data.ok) { say(WHY[r.data && r.data.reason] || "Action impossible pour le moment."); return; }
+      say("Ton live est annoncé à la communauté.", true);
+      $("url").value = ""; $("title").value = ""; loadLives();
+    });
+  };
+
+  db.auth.getSession().then(function (s) {
+    var sess = s.data && s.data.session;
+    if (!sess) { $("guest").className = "card"; return; }
+    db.from("profiles").select("role,status").eq("id", sess.user.id).maybeSingle().then(function (r) {
+      var p = r.data;
+      if (!p || p.status !== "approved") { $("waiting").className = "card"; return; }
+      isStaff = p.role === "founder" || p.role === "moderator";
+      $("app").className = "";
+      loadLives();
+      timer = setInterval(loadLives, 30000);
+    });
+  });
+})();
+</script>
+</body>
+</html>￼EnterYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Communauté - Budy Play</title>
+<style>
+  :root { --bg:#0b0b0c; --card:#161718; --line:#26282a; --neon:#39ff14; --text:#fff; --muted:#9a9ea3; --err:#ff5a5a; }
+  * { box-sizing:border-box; margin:0; padding:0; }
+  body { background:var(--bg); color:var(--text); font-family:system-ui,sans-serif; line-height:1.4; }
+  header { padding:16px; border-bottom:1px solid var(--line); display:flex; justify-content:space-between; align-items:center; }
+  header a { color:var(--text); text-decoration:none; font-size:1.4rem; font-weight:800; }
+  header a span { color:var(--neon); }
+  header a.s { font-size:.95rem; font-weight:600; color:var(--muted); }
+  main { max-width:520px; margin:0 auto; padding:16px 16px 40px; }
+  h1 { font-size:1.5rem; margin-bottom:12px; }
+  h2 { font-size:1.05rem; margin-bottom:10px; color:var(--neon); }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:12px; padding:14px; margin-bottom:14px; }
+  .btn { padding:10px 14px; border:0; border-radius:10px; background:var(--neon); color:#000; font-weight:700; font-size:.95rem; text-decoration:none; display:inline-block; text-align:center; }
+  .btn.sec { background:transparent; border:1px solid var(--line); color:var(--text); }
+  .btn.no { background:transparent; border:1px solid var(--err); color:var(--err); }
+  .btn:disabled { opacity:.5; }
+  .hidden { display:none; }
+  .item { display:flex; justify-content:space-between; align-items:center; gap:10px; padding:10px 0; border-bottom:1px solid var(--line); }
+  .item:last-child { border-bottom:0; }
+  .who { font-weight:700; }
+  .sub { color:var(--muted); font-size:.85rem; }
+  .acts { display:flex; gap:8px; flex-wrap:wrap; justify-content:flex-end; }
+  .empty { color:var(--muted); padding:4px 0; }
+  .live-dot { display:inline-block; width:9px; height:9px; border-radius:50%; background:var(--err); margin-right:6px; }
+  input, select { width:100%; padding:12px; border-radius:10px; border:1px solid var(--line); background:#0b0b0c; color:var(--text); font-size:1rem; margin-top:8px; }
+  input:focus, select:focus { outline:none; border-color:var(--neon); }
+  .steps { color:var(--muted); font-size:.9rem; margin:8px 0; }
+  .steps b { color:var(--text); }
+  #msg { min-height:1.2em; margin-top:8px; font-size:.95rem; }
+  .err { color:var(--err); } .ok { color:var(--neon); }
+  .links { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+  .note { color:var(--muted); font-size:.8rem; margin-top:8px; }
+</style>
+</head>
+<body>
+<header><a href="index.html">Budy <span>Play</span></a><a class="s" href="compte.html">Compte</a></header>
+<main>
+  <h1>Communauté</h1>
+
+  <div id="guest" class="hidden card">
+    <p>Connecte-toi pour voir les lives de la communauté.</p>
+    <p style="margin-top:12px"><a class="btn" href="compte.html">Se connecter</a></p>
+  </div>
+
+  <div id="waiting" class="hidden card">
+    <p>Ton compte doit être accepté par l'équipe Budy Play avant d'utiliser la communauté.</p>
+    <p style="margin-top:12px"><a class="btn" href="compte.html">Voir mon compte</a></p>
+  </div>
+
+  <div id="app" class="hidden">
+    <div class="card">
+      <h2>En live maintenant</h2>
+      <div id="lives"><p class="empty">Chargement...</p></div>
+    </div>
+
+    <div class="card">
+      <h2>Faire un live TikTok</h2>
+      <p class="steps"><b>1.</b> Ouvre TikTok et lance ton live de jeu.</p>
+      <a class="btn" href="https://www.tiktok.com/" target="_blank" rel="noopener noreferrer">Ouvrir TikTok</a>
+      <p class="steps" style="margin-top:12px"><b>2.</b> Dans TikTok, copie le lien de ton live (Partager, puis Copier le lien) et annonce-le ici :</p>
+      <form id="form">
+        <select id="game">
+          <option value="Free Fire">Free Fire</option>
+          <option value="Minecraft">Minecraft</option>
+          <option value="Fortnite">Fortnite</option>
+          <option value="Roblox">Roblox</option>
+          <option value="EA SPORTS FC">EA SPORTS FC</option>
+          <option value="Flex City">Flex City</option>
+          <option value="OneState RP">OneState RP</option>
