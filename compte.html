@@ -11,40 +11,76 @@
   header { padding:16px; border-bottom:1px solid var(--line); }
   header a { color:var(--text); text-decoration:none; font-size:1.4rem; font-weight:800; }
   header span { color:var(--neon); }
-  main { max-width:420px; margin:0 auto; padding:20px 16px 40px; }
+  main { max-width:520px; margin:0 auto; padding:20px 16px 110px; }
   h1 { font-size:1.5rem; margin-bottom:14px; }
   .card { background:var(--card); border:1px solid var(--line); border-radius:12px; padding:16px; margin-bottom:16px; }
+  .card h2 { font-size:1.05rem; margin-bottom:8px; color:var(--neon); display:flex; align-items:center; justify-content:space-between; gap:8px; }
   .tabs { display:flex; gap:8px; margin-bottom:6px; }
   .tabs button { flex:1; padding:10px; border-radius:10px; border:1px solid var(--line); background:var(--card); color:var(--text); font-size:1rem; }
   .tabs button.on { border-color:var(--neon); color:var(--neon); }
   label { display:block; margin:12px 0 4px; color:var(--muted); font-size:.9rem; }
-  input { width:100%; padding:12px; border-radius:10px; border:1px solid var(--line); background:#0b0b0c; color:var(--text); font-size:1rem; }
-  input:focus { outline:none; border-color:var(--neon); }
+  input, textarea { width:100%; padding:12px; border-radius:10px; border:1px solid var(--line); background:#0b0b0c; color:var(--text); font-size:1rem; font-family:inherit; }
+  textarea { resize:vertical; min-height:84px; }
+  input:focus, textarea:focus { outline:none; border-color:var(--neon); }
   .btn { width:100%; margin-top:16px; padding:12px; border:0; border-radius:10px; background:var(--neon); color:#000; font-weight:700; font-size:1rem; }
-  .btn.sec { background:transparent; border:1px solid var(--line); color:var(--text); }
+  .btn.sec { background:#26282a; border:0; color:var(--text); }
+  .btn.no { background:transparent; border:1px solid var(--err); color:var(--err); }
   .btn:disabled { opacity:.5; }
-  #msg, #msg2 { margin-top:12px; min-height:1.2em; font-size:.95rem; }
+  #msg, #msg2, #msg3 { margin-top:12px; min-height:1.2em; font-size:.95rem; }
   .err { color:var(--err); }
   .ok { color:var(--neon); }
-  .row { display:flex; justify-content:space-between; gap:12px; padding:8px 0; border-bottom:1px solid var(--line); }
-  .row:last-child { border-bottom:0; }
-  .row b { color:var(--neon); text-align:right; word-break:break-all; }
-  .hidden { display:none; }
+  .hidden { display:none !important; }
+  .btn, .tabs button, .link { display:inline-flex; align-items:center; justify-content:center; }
   .link { background:none; border:0; color:var(--neon); font-size:.95rem; margin-top:12px; padding:4px 0; text-decoration:underline; }
   .pw { position:relative; }
   .pw input { padding-right:84px; }
   .pw button { position:absolute; right:6px; top:6px; height:36px; padding:0 12px; border-radius:8px; border:1px solid var(--line); background:var(--card); color:var(--text); font-size:.85rem; }
+
+  /* ----- Profil (modèle réseau social) ----- */
+  .cover { height:120px; margin:-20px -16px 0; background:linear-gradient(135deg,#0f2a0a 0%,#14301a 45%,#0b0b0c 100%); border-bottom:1px solid var(--line); }
+  .head { text-align:center; margin-top:-60px; }
+  .av-wrap { position:relative; width:116px; height:116px; margin:0 auto; }
+  .av { width:116px; height:116px; border-radius:50%; border:4px solid var(--bg); background:var(--neon); color:#000; overflow:hidden; display:flex; align-items:center; justify-content:center; font-size:3rem; font-weight:800; }
+  .av img { width:100%; height:100%; object-fit:cover; display:block; }
+  .cam { position:absolute; right:-2px; bottom:2px; width:38px; height:38px; padding:0; border:3px solid var(--bg); border-radius:50%; background:var(--neon); display:flex; align-items:center; justify-content:center; }
+  .cam .ic { width:100%; height:100%; margin:0; padding:.3em; border-radius:50%; }
+  .head h1 { margin:10px 0 2px; font-size:1.6rem; overflow-wrap:anywhere; }
+  .meta { color:var(--muted); font-size:.95rem; }
+  .meta b { color:var(--text); }
+  .pill { display:inline-block; font-size:.75rem; font-weight:700; color:var(--neon); border:1px solid var(--neon); border-radius:20px; padding:1px 9px; margin-right:6px; }
+  .bio { margin:10px auto 0; max-width:380px; color:var(--text); white-space:pre-wrap; overflow-wrap:anywhere; }
+  .bio.empty { color:var(--muted); }
+  .two { display:flex; gap:8px; margin-top:16px; }
+  .two .btn { flex:1; margin-top:0; padding:11px 8px; font-size:.95rem; }
+  .list a { display:flex; align-items:center; gap:4px; padding:12px 4px; color:var(--text); text-decoration:none; border-bottom:1px solid var(--line); }
+  .list a:last-child { border-bottom:0; }
+  .row { display:flex; justify-content:space-between; align-items:center; gap:12px; padding:10px 0; border-bottom:1px solid var(--line); }
+  .row:last-child { border-bottom:0; }
+  .row span { color:var(--muted); display:flex; align-items:center; }
+  .row b { color:var(--text); text-align:right; word-break:break-all; font-weight:600; }
+  .pen { background:none; border:0; padding:2px; display:inline-flex; }
+  .count { color:var(--muted); font-size:.8rem; text-align:right; margin-top:2px; }
+  .actions { display:flex; gap:8px; flex-wrap:wrap; }
+  .actions .btn { flex:1; min-width:120px; margin-top:12px; }
+
+  /* ----- Barre du bas ----- */
+  .bnav { position:fixed; left:0; right:0; bottom:0; z-index:50; background:#0f1011; border-top:1px solid var(--line); display:flex; justify-content:space-around; padding:6px 4px calc(6px + env(safe-area-inset-bottom)); }
+  .bnav a { flex:1; display:flex; flex-direction:column; align-items:center; gap:3px; color:var(--muted); text-decoration:none; font-size:.72rem; padding:4px 0; }
+  .bnav a .ic { margin:0; width:1.9em; height:1.9em; background:#9a9ea3; }
+  .bnav a.on { color:var(--neon); font-weight:700; }
+  .bnav a.on .ic { background:#39ff14; }
+  .bv-b { bottom:88px !important; }
 </style>
 </head>
 <body>
 <header><a href="index.html">Budy <span>Play</span></a></header>
 <main>
   <div id="auth">
-    <h1>Compte</h1>
+    <h1 data-i="user">Compte</h1>
     <div class="card">
       <div class="tabs">
-        <button id="tab-in" class="on" type="button">Connexion</button>
-        <button id="tab-up" type="button">Inscription</button>
+        <button id="tab-in" class="on" type="button" data-i="login">Connexion</button>
+        <button id="tab-up" type="button" data-i="user-plus">Inscription</button>
       </div>
       <form id="form" novalidate>
         <div id="username-wrap" class="hidden">
@@ -56,48 +92,93 @@
         <label for="password">Mot de passe (8 caractères minimum)</label>
         <div class="pw">
           <input id="password" type="password" autocomplete="current-password">
-          <button id="eye" type="button">Voir</button>
+          <button id="eye" type="button" data-i="eye">Voir</button>
         </div>
-        <button class="btn" id="submit" type="submit">Se connecter</button>
+        <button class="btn" id="submit" type="submit" data-i="login">Se connecter</button>
       </form>
-      <button class="link" id="forgot" type="button">Mot de passe oublié ?</button>
-      <button class="link hidden" id="resend" type="button">Renvoyer l'e-mail de confirmation</button>
+      <button class="link" id="forgot" type="button" data-i="key">Mot de passe oublié ?</button>
+      <button class="link hidden" id="resend" type="button" data-i="mail">Renvoyer l'e-mail de confirmation</button>
       <p id="msg"></p>
     </div>
   </div>
 
   <div id="recover" class="hidden">
-    <h1>Nouveau mot de passe</h1>
+    <h1 data-i="key">Nouveau mot de passe</h1>
     <div class="card">
       <label for="newpw">Nouveau mot de passe (8 caractères minimum)</label>
       <input id="newpw" type="password" autocomplete="new-password">
-      <button class="btn" id="savepw" type="button">Enregistrer</button>
+      <button class="btn" id="savepw" type="button" data-i="save">Enregistrer</button>
       <p id="msg3"></p>
     </div>
   </div>
 
   <div id="profile" class="hidden">
-    <h1>Mon profil</h1>
-    <div class="card">
-      <div class="row"><span>Nom d'utilisateur</span><b id="p-username"></b></div>
-      <div class="row"><span>Budy ID</span><b id="p-budy"></b></div>
-      <div class="row"><span>Rôle</span><b id="p-role"></b></div>
-      <div class="row"><span>Statut</span><b id="p-status"></b></div>
-      <div class="row"><span>E-mail</span><b id="p-email"></b></div>
+    <div class="cover"></div>
+    <div class="head">
+      <div class="av-wrap">
+        <div class="av" id="av"><span id="av-ini"></span><img id="av-img" alt="Ma photo de profil" class="hidden"></div>
+        <button class="cam" id="cam" type="button" data-i="image" data-label="Changer ma photo"></button>
+        <input id="file" type="file" accept="image/*" class="hidden">
+      </div>
+      <h1 id="h-name">...</h1>
+      <p class="meta"><span class="pill" id="h-role"></span>Budy ID <b id="h-budy"></b></p>
+      <p class="bio empty" id="h-bio">Aucune description pour le moment.</p>
+      <div class="two">
+        <button class="btn" id="b-dash" type="button" data-i="layout">Tableau de bord</button>
+        <button class="btn sec" id="b-edit" type="button" data-i="edit">Modifier le profil</button>
+      </div>
     </div>
-    <div class="card">
-      <label for="newname">Changer mon nom d'utilisateur</label>
+
+    <div class="card hidden" id="wait" style="margin-top:16px"><b>Compte en attente de validation.</b><p style="margin-top:6px;color:var(--muted)">L'équipe Budy Play doit accepter ton compte avant que tu puisses utiliser la boutique, les messages et les compétitions. Reviens plus tard.</p></div>
+
+    <div class="card hidden list" id="dash" style="margin-top:16px">
+      <h2>Tableau de bord</h2>
+      <a id="d-msg" href="messages.html" data-i="message">Messages et amis</a>
+      <a id="d-call" href="appels.html" data-i="phone">WhatsApp et appels</a>
+      <a id="d-comp" href="competitions.html" data-i="trophy">Compétitions</a>
+      <a id="d-com" href="communaute.html" data-i="users">Communauté</a>
+      <a id="d-set" href="parametres.html" data-i="settings">Paramètres</a>
+      <a id="staff-link" href="membres.html" data-i="users" class="hidden">Gérer les membres</a>
+      <a id="founder-link" href="fondateur.html" data-i="crown" class="hidden">Espace fondateur</a>
+    </div>
+
+    <div class="card hidden" id="edit" style="margin-top:16px">
+      <h2>Modifier le profil</h2>
+      <div class="actions">
+        <button class="btn sec" id="pick" type="button" data-i="image">Changer la photo</button>
+        <button class="btn sec" id="rmphoto" type="button" data-i="trash">Retirer la photo</button>
+      </div>
+      <label for="newname">Nom d'utilisateur</label>
       <input id="newname" maxlength="20" autocomplete="off">
-      <button class="btn" id="savename" type="button">Enregistrer le nom</button>
+      <label for="newbio">Description (300 caractères maximum)</label>
+      <textarea id="newbio" maxlength="300"></textarea>
+      <p class="count"><span id="bio-n">0</span> / 300</p>
+      <div class="actions">
+        <button class="btn" id="saveprofile" type="button" data-i="save">Enregistrer</button>
+        <button class="btn sec" id="cancel" type="button" data-i="x">Annuler</button>
+      </div>
     </div>
-    <div class="card hidden" id="wait"><b>Compte en attente de validation.</b><p style="margin-top:6px;color:var(--muted)">L'équipe Budy Play doit accepter ton compte avant que tu puisses utiliser la boutique, les messages et les compétitions. Reviens plus tard.</p></div>
-    <a class="btn sec" id="msg-link" href="messages.html" style="display:block;text-align:center;text-decoration:none">Messages et amis</a>
-    <a class="btn sec" id="staff-link" href="membres.html" style="display:none;text-align:center;text-decoration:none">Gérer les membres</a>
-    <a class="btn sec" id="founder-link" href="fondateur.html" style="display:none;text-align:center;text-decoration:none">Espace fondateur</a>
-    <button class="btn sec" id="logout" type="button">Se déconnecter</button>
+
+    <div class="card" style="margin-top:16px">
+      <h2>Informations personnelles <button class="pen" id="pen" type="button" data-i="edit" data-label="Modifier"></button></h2>
+      <div class="row"><span data-i="user">Nom d'utilisateur</span><b id="p-username"></b></div>
+      <div class="row"><span data-i="shield">Rôle</span><b id="p-role"></b></div>
+      <div class="row"><span data-i="check">Statut</span><b id="p-status"></b></div>
+      <div class="row"><span data-i="mail">E-mail</span><b id="p-email"></b></div>
+    </div>
+
+    <button class="btn no" id="logout" type="button" data-i="logout" style="margin-top:0">Se déconnecter</button>
     <p id="msg2"></p>
   </div>
 </main>
+
+<nav class="bnav" aria-label="Navigation principale">
+  <a href="index.html" data-i="home">Accueil</a>
+  <a href="catalogue.html" data-i="gamepad">Jeux</a>
+  <a href="messages.html" data-i="message">Messages</a>
+  <a href="boutique.html" data-i="shopping-bag">Boutique</a>
+  <a href="compte.html" class="on" data-i="user">Compte</a>
+</nav>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="config.js"></script>
@@ -115,6 +196,7 @@
   var ROLES = { member: "Membre", moderator: "Modérateur", founder: "Fondateur" };
   var STATUS = { pending: "En attente", approved: "Accepté", rejected: "Refusé" };
   var recovering = /type=recovery/.test(location.hash);
+  var me = null; /* { id, username, bio, avatar_url } */
 
   function setMode(m) {
     mode = m;
@@ -123,6 +205,7 @@
     $("username-wrap").className = m === "up" ? "" : "hidden";
     $("forgot").className = m === "in" ? "link" : "link hidden";
     $("submit").textContent = m === "up" ? "Créer mon compte" : "Se connecter";
+    $("submit").setAttribute("data-i", m === "up" ? "user-plus" : "login");
     $("password").setAttribute("autocomplete", m === "up" ? "new-password" : "current-password");
     $("resend").className = "link hidden";
     show("");
@@ -147,34 +230,54 @@
 
   function showAuth() {
     $("profile").className = "hidden"; $("recover").className = "hidden"; $("auth").className = "";
-    $("password").value = ""; setMode("in");
+    $("password").value = ""; setMode("in"); me = null;
   }
+
+  /* ---------- Affichage du profil ---------- */
+  function paintHead() {
+    $("h-name").textContent = me.username;
+    $("p-username").textContent = me.username;
+    $("av-ini").textContent = (me.username || "?").charAt(0).toUpperCase();
+    var okUrl = me.avatar_url && /^https:\/\//i.test(me.avatar_url);
+    if (okUrl) { $("av-img").src = me.avatar_url; $("av-img").className = ""; $("av-ini").className = "hidden"; }
+    else { $("av-img").removeAttribute("src"); $("av-img").className = "hidden"; $("av-ini").className = ""; }
+    var b = $("h-bio");
+    if (me.bio) { b.textContent = me.bio; b.className = "bio"; }
+    else { b.textContent = "Aucune description pour le moment."; b.className = "bio empty"; }
+  }
+  $("av-img").onerror = function () { $("av-img").className = "hidden"; $("av-ini").className = ""; };
+  function closePanels() { $("dash").className = "card hidden list"; $("edit").className = "card hidden"; }
 
   async function showProfile(user) {
     $("auth").className = "hidden"; $("recover").className = "hidden"; $("profile").className = "";
-    say("msg2", "");
+    say("msg2", ""); closePanels();
     $("p-email").textContent = user.email || "";
-    $("p-username").textContent = "..."; $("p-budy").textContent = "..."; $("p-role").textContent = "...";
-    $("founder-link").style.display = "none"; $("staff-link").style.display = "none"; $("wait").className = "card hidden"; $("p-status").textContent = "...";
-    var res = await db.from("profiles").select("username,budy_id,role,status").eq("id", user.id).maybeSingle();
+    $("h-name").textContent = "..."; $("h-budy").textContent = "..."; $("h-role").textContent = "";
+    $("p-username").textContent = "..."; $("p-role").textContent = "..."; $("p-status").textContent = "...";
+    $("founder-link").className = "hidden"; $("staff-link").className = "hidden"; $("wait").className = "card hidden";
+    var res = await db.from("profiles").select("username,budy_id,role,status,bio,avatar_url").eq("id", user.id).maybeSingle();
     if (res.error || !res.data) {
-      $("p-username").textContent = "-"; $("p-budy").textContent = "-"; $("p-role").textContent = "-";
+      $("h-name").textContent = "-"; $("h-budy").textContent = "-"; $("p-username").textContent = "-"; $("p-role").textContent = "-"; $("p-status").textContent = "-";
       say("msg2", "Ton profil n'a pas pu être chargé pour le moment.", "err");
       return;
     }
-    $("p-username").textContent = res.data.username;
-    $("newname").value = res.data.username;
-    $("p-budy").textContent = String(res.data.budy_id);
-    $("p-role").textContent = ROLES[res.data.role] || res.data.role;
-    var ok = res.data.status === "approved";
-    $("p-status").textContent = STATUS[res.data.status] || res.data.status;
+    var d = res.data;
+    me = { id: user.id, username: d.username, bio: d.bio || "", avatar_url: d.avatar_url || "" };
+    paintHead();
+    var role = ROLES[d.role] || d.role;
+    $("h-budy").textContent = String(d.budy_id);
+    $("h-role").textContent = role; $("p-role").textContent = role;
+    var ok = d.status === "approved";
+    $("p-status").textContent = STATUS[d.status] || d.status;
     $("wait").className = ok ? "card hidden" : "card";
-    if (res.data.status === "rejected") $("wait").textContent = "Ton compte a été refusé par l'équipe Budy Play.";
-    $("msg-link").style.display = ok ? "block" : "none";
-    $("founder-link").style.display = ok && res.data.role === "founder" ? "block" : "none";
-    $("staff-link").style.display = ok && (res.data.role === "founder" || res.data.role === "moderator") ? "block" : "none";
+    if (d.status === "rejected") $("wait").textContent = "Ton compte a été refusé par l'équipe Budy Play.";
+    var vis = function (id, on) { $(id).className = on ? "" : "hidden"; };
+    vis("d-msg", ok); vis("d-call", ok); vis("d-comp", ok); vis("d-com", ok);
+    vis("founder-link", ok && d.role === "founder");
+    vis("staff-link", ok && (d.role === "founder" || d.role === "moderator"));
   }
 
+  /* ---------- Connexion / inscription ---------- */
   $("form").onsubmit = async function (ev) {
     ev.preventDefault();
     var email = $("email").value.trim();
@@ -236,16 +339,89 @@
     if (s.data && s.data.session) { history.replaceState(null, "", location.pathname); recovering = false; await showProfile(s.data.session.user); }
   };
 
-  $("savename").onclick = async function () {
+  /* ---------- Boutons du profil ---------- */
+  $("b-dash").onclick = function () {
+    var open = $("dash").className.indexOf("hidden") === -1;
+    closePanels(); if (!open) $("dash").className = "card list";
+  };
+  function openEdit() {
+    if (!me) return;
+    closePanels(); say("msg2", "");
+    $("newname").value = me.username; $("newbio").value = me.bio; $("bio-n").textContent = String(me.bio.length);
+    $("edit").className = "card";
+    $("edit").scrollIntoView({ behavior: "smooth", block: "nearest" });
+  }
+  $("b-edit").onclick = openEdit;
+  $("pen").onclick = openEdit;
+  $("cancel").onclick = function () { closePanels(); say("msg2", ""); };
+  $("newbio").oninput = function () { $("bio-n").textContent = String($("newbio").value.length); };
+
+  $("saveprofile").onclick = async function () {
+    if (!me) return;
     var n = $("newname").value.trim();
-    if (!/^[A-Za-z0-9_]{3,20}$/.test(n)) { say("msg2", "3 à 20 caractères : lettres, chiffres ou _.", "err"); return; }
+    var bio = $("newbio").value.trim();
+    if (!/^[A-Za-z0-9_]{3,20}$/.test(n)) { say("msg2", "Nom : 3 à 20 caractères (lettres, chiffres ou _).", "err"); return; }
+    if (bio.length > 300) { say("msg2", "La description est trop longue (300 maximum).", "err"); return; }
     var s = await db.auth.getSession(); var u = s.data && s.data.session && s.data.session.user;
     if (!u) { showAuth(); return; }
-    $("savename").disabled = true;
-    var r = await db.from("profiles").update({ username: n }).eq("id", u.id);
-    $("savename").disabled = false;
+    $("saveprofile").disabled = true;
+    var r = await db.from("profiles").update({ username: n, bio: bio }).eq("id", u.id);
+    $("saveprofile").disabled = false;
     if (r.error) { say("msg2", "Ce nom est déjà pris ou n'est pas valide.", "err"); return; }
-    $("p-username").textContent = n; say("msg2", "Nom enregistré.", "ok");
+    me.username = n; me.bio = bio; paintHead(); closePanels();
+    say("msg2", "Profil enregistré.", "ok");
+  };
+
+  /* ---------- Photo de profil ---------- */
+  function pickPhoto() { if (me) $("file").click(); }
+  $("cam").onclick = pickPhoto;
+  $("pick").onclick = pickPhoto;
+
+  function toBlob(file) {
+    return new Promise(function (resolve, reject) {
+      var url = URL.createObjectURL(file), img = new Image();
+      img.onload = function () {
+        var size = 512, c = document.createElement("canvas"); c.width = size; c.height = size;
+        var side = Math.min(img.width, img.height), sx = (img.width - side) / 2, sy = (img.height - side) / 2;
+        c.getContext("2d").drawImage(img, sx, sy, side, side, 0, 0, size, size);
+        URL.revokeObjectURL(url);
+        c.toBlob(function (b) { b ? resolve(b) : reject(new Error("blob")); }, "image/jpeg", 0.85);
+      };
+      img.onerror = function () { URL.revokeObjectURL(url); reject(new Error("image")); };
+      img.src = url;
+    });
+  }
+
+  $("file").onchange = async function () {
+    var f = $("file").files && $("file").files[0];
+    $("file").value = "";
+    if (!f || !me) return;
+    if (!/^image\//.test(f.type)) { say("msg2", "Choisis une image (photo).", "err"); return; }
+    if (f.size > 15 * 1024 * 1024) { say("msg2", "Cette image est trop lourde (15 Mo maximum).", "err"); return; }
+    say("msg2", "Envoi de la photo...");
+    try {
+      var blob = await toBlob(f);
+      var path = me.id + "/avatar.jpg";
+      var up = await db.storage.from("avatars").upload(path, blob, { upsert: true, contentType: "image/jpeg", cacheControl: "3600" });
+      if (up.error) throw up.error;
+      var url = db.storage.from("avatars").getPublicUrl(path).data.publicUrl + "?v=" + Date.now();
+      var r = await db.from("profiles").update({ avatar_url: url }).eq("id", me.id);
+      if (r.error) throw r.error;
+      me.avatar_url = url; paintHead();
+      say("msg2", "Photo de profil enregistrée.", "ok");
+    } catch (e) {
+      say("msg2", "La photo n'a pas pu être enregistrée pour le moment.", "err");
+    }
+  };
+
+  $("rmphoto").onclick = async function () {
+    if (!me || !me.avatar_url) { say("msg2", "Tu n'as pas de photo à retirer."); return; }
+    if (!confirm("Retirer ta photo de profil ?")) return;
+    var r = await db.from("profiles").update({ avatar_url: null }).eq("id", me.id);
+    if (r.error) { say("msg2", "Impossible pour le moment.", "err"); return; }
+    await db.storage.from("avatars").remove([me.id + "/avatar.jpg"]);
+    me.avatar_url = ""; paintHead(); closePanels();
+    say("msg2", "Photo retirée.", "ok");
   };
 
   $("logout").onclick = async function () { await db.auth.signOut(); showAuth(); };
@@ -259,5 +435,6 @@
   });
 })();
 </script>
+<script src="ui.js"></script>
 </body>
 </html>
