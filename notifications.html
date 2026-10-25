@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Notifications - Budy Play</title>
+<style>
+  :root { --bg:#0b0b0c; --card:#161718; --line:#26282a; --neon:#39ff14; --text:#fff; --muted:#9a9ea3; --err:#ff5a5a; }
+  * { box-sizing:border-box; margin:0; padding:0; }
+  body { background:var(--bg); color:var(--text); font-family:system-ui,sans-serif; line-height:1.4; }
+  header { padding:16px; border-bottom:1px solid var(--line); display:flex; justify-content:space-between; align-items:center; }
+  header a { color:var(--text); text-decoration:none; font-size:1.4rem; font-weight:800; }
+  header a span { color:var(--neon); }
+  header a.s { font-size:.95rem; font-weight:600; color:var(--muted); }
+  main { max-width:520px; margin:0 auto; padding:16px 16px 40px; }
+  h1 { font-size:1.5rem; margin-bottom:12px; }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:12px; padding:14px; margin-bottom:14px; }
+  .tabs { display:flex; gap:8px; margin-bottom:14px; }
+  .tabs button { flex:1; padding:10px; border-radius:10px; border:1px solid var(--line); background:var(--card); color:var(--text); font-size:1rem; display:inline-flex; align-items:center; justify-content:center; }
+  .tabs button.on { border-color:var(--neon); color:var(--neon); }
+  .dot { background:var(--neon); color:#000; border-radius:99px; font-size:.75rem; font-weight:800; padding:1px 7px; margin-left:6px; }
+  .btn { padding:10px 14px; border:0; border-radius:10px; background:var(--neon); color:#000; font-weight:700; font-size:.95rem; text-decoration:none; display:inline-flex; align-items:center; justify-content:center; }
+  .btn.sec { background:#26282a; color:var(--text); }
+  .btn:disabled { opacity:.5; }
+  .hidden { display:none !important; }
+  .top { display:flex; justify-content:space-between; align-items:center; gap:8px; margin-bottom:10px; }
+  .note { color:var(--muted); font-size:.85rem; }
+  .n { display:flex; gap:10px; align-items:flex-start; padding:12px 4px; border-bottom:1px solid var(--line); cursor:pointer; }
+  .n:last-child { border-bottom:0; }
+  .n .mark { flex:none; width:10px; height:10px; border-radius:50%; margin-top:6px; background:transparent; border:1px solid var(--line); }
+  .n.new .mark { background:var(--neon); border-color:var(--neon); }
+  .n .t { font-weight:600; overflow-wrap:anywhere; }
+  .n.new .t { color:var(--text); }
+  .n:not(.new) .t { color:var(--muted); font-weight:500; }
+  .n .b { color:var(--muted); font-size:.9rem; overflow-wrap:anywhere; }
+  .n .w { color:var(--muted); font-size:.75rem; margin-top:2px; }
+  .empty { color:var(--muted); padding:6px 0; }
+  #info { min-height:1.2em; font-size:.95rem; margin-bottom:8px; }
+  .err { color:var(--err); }
+</style>
+</head>
+<body>
+<header><a href="index.html">Budy <span>Play</span></a><a class="s" href="compte.html" data-i="user">Compte</a></header>
+<main>
+  <div id="guest" class="hidden card">
+    <h1 data-i="bell">Notifications</h1>
+    <p>Connecte-toi pour voir tes notifications.</p>
+    <p style="margin-top:12px"><a class="btn" href="compte.html" data-i="login">Se connecter</a></p>
+  </div>
+
+  <div id="app" class="hidden">
+    <h1 data-i="bell">Notifications</h1>
+    <div class="tabs" id="tabs">
+      <button id="t-me" class="on" type="button" data-i="user">Pour moi<span id="b-me"></span></button>
+      <button id="t-staff" class="hidden" type="button" data-i="shield">Équipe<span id="b-staff"></span></button>
+    </div>
+    <p class="note" id="desc">Ce qui te concerne : messages, amis, commandes, compétitions, compte.</p>
+    <div class="top">
+      <span class="note" id="count"></span>
+      <button class="btn sec" id="all" type="button" data-i="check">Tout marquer comme lu</button>
+    </div>
+    <p id="info"></p>
+    <div class="card"><div id="list"><p class="empty">Chargement...</p></div></div>
+  </div>
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="config.js"></script>
+<script>
+(function () {
+  var cfg = window.BUDY_CONFIG || {};
+  var $ = function (id) { return document.getElementById(id); };
+  var db = window.supabase.createClient(cfg.SUPABASE_URL, cfg.SUPABASE_KEY);
+  var scope = "personal", isStaff = false, timer = null;
+  var DESC = {
+    personal: "Ce qui te concerne : messages, amis, commandes, compétitions, compte.",
+    staff: "Pour l'équipe : nouveaux membres à valider et nouvelles commandes."
+  };
+
+  function el(tag, cls, txt) { var e = document.createElement(tag); if (cls) e.className = cls; if (txt != null) e.textContent = txt; return e; }
+  function ago(d) {
+    var m = Math.max(0, Math.round((Date.now() - new Date(d).getTime()) / 60000));
+    if (m < 1) return "à l'instant";
+    if (m < 60) return "il y a " + m + " min";
+    if (m < 1440) return "il y a " + Math.floor(m / 60) + " h";
+    return "il y a " + Math.floor(m / 1440) + " j";
+  }
+  function badge(id, n) { var b = $(id); b.textContent = n > 0 ? String(n) : ""; b.className = n > 0 ? "dot" : ""; }
+
+  function counts() {
+    db.rpc("unread_notifications").then(function (r) {
+      if (r.error || !r.data) return;
+      badge("b-me", Number(r.data.personal || 0)); badge("b-staff", Number(r.data.staff || 0));
+    });
+  }
+
+  function load() {
+    db.rpc("my_notifications", { p_scope: scope, p_limit: 50 }).then(function (r) {
+      var box = $("list"); box.textContent = "";
+      if (r.error) { box.appendChild(el("p", "empty", "Impossible de charger les notifications.")); return; }
+      var rows = r.data || [], unread = 0;
+      if (!rows.length) { box.appendChild(el("p", "empty", "Aucune notification pour le moment.")); $("count").textContent = ""; counts(); return; }
+      rows.forEach(function (x) {
+        var isNew = !x.read_at; if (isNew) unread++;
+        var it = el("div", "n" + (isNew ? " new" : ""));
+        it.appendChild(el("span", "mark"));
+        var c = el("div");
+        c.appendChild(el("div", "t", x.title));
+        if (x.body) c.appendChild(el("div", "b", x.body));
+        c.appendChild(el("div", "w", ago(x.created_at)));
+        it.appendChild(c);
+        it.onclick = function () {
+          var go = function () { if (x.link && /^[a-z0-9_]+\.html$/.test(x.link)) location.href = x.link; else load(); };
+          if (isNew) db.rpc("mark_notification_read", { p_id: x.id }).then(go); else go();
+        };
+        box.appendChild(it);
+      });
+      $("count").textContent = unread ? unread + " non lue" + (unread > 1 ? "s" : "") : "Tout est lu";
+      counts();
+    });
+  }
+
+  function setScope(s) {
+    scope = s;
+    $("t-me").className = s === "personal" ? "on" : "";
+    $("t-staff").className = (isStaff ? "" : "hidden ") + (s === "staff" ? "on" : "");
+    $("desc").textContent = DESC[s]; $("info").textContent = "";
+    load();
+  }
+  $("t-me").onclick = function () { setScope("personal"); };
+  $("t-staff").onclick = function () { setScope("staff"); };
+  $("all").onclick = function () {
+    $("all").disabled = true;
+    db.rpc("mark_all_notifications_read", { p_scope: scope }).then(function (r) {
+      $("all").disabled = false;
+      if (r.error) { $("info").textContent = "Impossible pour le moment."; $("info").className = "err"; return; }
+      load();
+    });
+  };
+
+  db.auth.getSession().then(function (s) {
+    var sess = s.data && s.data.session;
+    if (!sess) { $("guest").className = "card"; return; }
+    $("app").className = "";
+    db.from("profiles").select("role,status").eq("id", sess.user.id).maybeSingle().then(function (r) {
+      var p = r.data || {};
+      isStaff = p.status === "approved" && (p.role === "founder" || p.role === "moderator");
+      $("t-staff").className = isStaff ? "" : "hidden";
+      setScope("personal");
+      timer = setInterval(function () { load(); }, 30000);
+    });
+  });
+})();
+</script>
+<script src="ui.js"></script>
+</body>
+</html>
