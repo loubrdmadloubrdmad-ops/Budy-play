@@ -50,9 +50,29 @@
     <div class="card"><h2 data-i="calendar">Réunions</h2><span class="badge off">Bientôt</span></div>
     <a class="card" href="competitions.html"><h2 data-i="trophy">Compétitions</h2><span class="badge">En test</span></a>
     <a class="card" href="compte.html"><h2 data-i="user">Comptes et profils</h2><span class="badge">En test</span></a>
-    <div class="card"><h2 data-i="bell">Notifications</h2><span class="badge off">Bientôt</span></div>
+    <a class="card" href="notifications.html"><h2 data-i="bell">Notifications</h2><span class="badge" id="nbadge">En test</span></a>
   </div>
 </main>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="config.js"></script>
+<script>
+(function () {
+  /* Affiche le nombre de notifications non lues sur la carte (si connecté). */
+  try {
+    var cfg = window.BUDY_CONFIG;
+    if (!cfg || !window.supabase) return;
+    var db = window.supabase.createClient(cfg.SUPABASE_URL, cfg.SUPABASE_KEY);
+    db.auth.getSession().then(function (s) {
+      if (!(s.data && s.data.session)) return;
+      db.rpc("unread_notifications").then(function (r) {
+        if (r.error || !r.data) return;
+        var n = Number(r.data.personal || 0) + Number(r.data.staff || 0);
+        if (n > 0) document.getElementById("nbadge").textContent = n + (n > 1 ? " nouvelles" : " nouvelle");
+      });
+    });
+  } catch (e) {}
+})();
+</script>
 <script src="ui.js"></script>
 </body>
 </html>
