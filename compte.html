@@ -89,7 +89,7 @@
         </div>
         <label for="email">E-mail</label>
         <input id="email" type="email" autocomplete="email" inputmode="email">
-        <label for="password">Mot de passe (8 caractères minimum)</label>
+        <label for="password" id="pwlabel">Mot de passe</label>
         <div class="pw">
           <input id="password" type="password" autocomplete="current-password">
           <button id="eye" type="button" data-i="eye">Voir</button>
@@ -105,7 +105,7 @@
   <div id="recover" class="hidden">
     <h1 data-i="key">Nouveau mot de passe</h1>
     <div class="card">
-      <label for="newpw">Nouveau mot de passe (8 caractères minimum)</label>
+      <label for="newpw">Nouveau mot de passe (10 caractères minimum, avec majuscule, minuscule et chiffre)</label>
       <input id="newpw" type="password" autocomplete="new-password">
       <button class="btn" id="savepw" type="button" data-i="save">Enregistrer</button>
       <p id="msg3"></p>
@@ -207,6 +207,7 @@
     $("submit").textContent = m === "up" ? "Créer mon compte" : "Se connecter";
     $("submit").setAttribute("data-i", m === "up" ? "user-plus" : "login");
     $("password").setAttribute("autocomplete", m === "up" ? "new-password" : "current-password");
+    $("pwlabel").textContent = m === "up" ? "Mot de passe (10 caractères minimum, avec majuscule, minuscule et chiffre)" : "Mot de passe";
     $("resend").className = "link hidden";
     show("");
   }
@@ -217,6 +218,15 @@
     p.type = h ? "text" : "password"; $("eye").textContent = h ? "Cacher" : "Voir";
   };
 
+  /* Règle du mot de passe (identique à Supabase) : 10 caractères min., minuscule, majuscule, chiffre. */
+  function pwProblem(p) {
+    if (p.length < 10) return "Le mot de passe doit avoir au moins 10 caractères.";
+    if (!/[a-z]/.test(p)) return "Il manque une lettre minuscule dans le mot de passe.";
+    if (!/[A-Z]/.test(p)) return "Il manque une lettre majuscule dans le mot de passe.";
+    if (!/[0-9]/.test(p)) return "Il manque un chiffre dans le mot de passe.";
+    return "";
+  }
+
   function frError(e) {
     var m = ((e && e.message) || "").toLowerCase();
     if (m.indexOf("invalid login") > -1) return "E-mail ou mot de passe incorrect. Pas encore de compte ? Appuie sur Inscription.";
@@ -224,7 +234,7 @@
     if (m.indexOf("already registered") > -1) return "Cet e-mail a déjà un compte. Va dans Connexion.";
     if (m.indexOf("database error") > -1 || m.indexOf("username") > -1) return "Ce nom d'utilisateur n'est pas valide ou est déjà pris.";
     if (m.indexOf("rate limit") > -1 || m.indexOf("seconds") > -1) return "Trop d'essais. Réessaie dans quelques minutes.";
-    if (m.indexOf("password") > -1) return "Mot de passe trop faible ou refusé. Essaie-en un plus long.";
+    if (m.indexOf("password") > -1) return "Mot de passe refusé. Il faut au moins 10 caractères, avec une majuscule, une minuscule et un chiffre.";
     return "Une erreur est survenue : " + ((e && e.message) || "inconnue");
   }
 
@@ -286,7 +296,8 @@
     if (!email || !password) { show("Écris ton e-mail et ton mot de passe.", "err"); return; }
     if (mode === "up") {
       if (!/^[A-Za-z0-9_]{3,20}$/.test(username)) { show("Le nom d'utilisateur doit avoir 3 à 20 caractères : lettres, chiffres ou _.", "err"); return; }
-      if (password.length < 8) { show("Le mot de passe doit avoir au moins 8 caractères.", "err"); return; }
+      var pwp = pwProblem(password);
+      if (pwp) { show(pwp, "err"); return; }
     }
     $("submit").disabled = true; show("Un instant...");
     try {
@@ -331,7 +342,8 @@
 
   $("savepw").onclick = async function () {
     var p = $("newpw").value;
-    if (p.length < 8) { say("msg3", "8 caractères minimum.", "err"); return; }
+    var pwp2 = pwProblem(p);
+    if (pwp2) { say("msg3", pwp2, "err"); return; }
     var r = await db.auth.updateUser({ password: p });
     if (r.error) { say("msg3", frError(r.error), "err"); return; }
     say("msg3", "Mot de passe changé.", "ok");
