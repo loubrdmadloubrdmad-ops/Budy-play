@@ -52,6 +52,13 @@
   #callbar .row { display:flex; gap:8px; flex-wrap:wrap; align-items:center; }
   #callbar a.btn { text-decoration:none; }
   #callbar .note { margin-top:6px; }
+  .rep { background:none; border:0; color:var(--muted); font-size:.7rem; text-decoration:underline; padding:2px 0 0; margin-left:8px; }
+  #chat-head .btn { padding:8px 10px; font-size:.85rem; }
+  #chat-head #rp-user { margin-left:auto; }
+  #rpbox { background:var(--card); border:1px solid var(--err); border-radius:12px; padding:12px; margin-bottom:8px; }
+  #rpbox label { display:block; color:var(--muted); font-size:.85rem; margin:8px 0 4px; }
+  #rpbox .line { margin-top:10px; }
+  #rp-quote { color:var(--muted); font-size:.85rem; font-style:italic; overflow-wrap:anywhere; }
 </style>
 </head>
 <body>
@@ -109,6 +116,26 @@
       <div id="chat-head">
         <button class="btn sec" id="back" type="button" data-i="back">← Retour</button>
         <span id="chat-name"></span>
+        <button class="btn no" id="rp-user" type="button" data-i="shield">Signaler</button>
+      </div>
+      <div id="rpbox" class="hidden">
+        <b>Signaler à l'équipe</b>
+        <p id="rp-quote"></p>
+        <label for="rp-reason">Motif</label>
+        <select id="rp-reason">
+          <option value="harcelement">Harcèlement ou insultes</option>
+          <option value="spam">Spam ou publicité</option>
+          <option value="contenu_inapproprie">Contenu inapproprié</option>
+          <option value="arnaque">Arnaque ou tentative de vol</option>
+          <option value="autre">Autre</option>
+        </select>
+        <label for="rp-details">Détails (facultatif, 300 caractères max)</label>
+        <input id="rp-details" maxlength="300" autocomplete="off">
+        <div class="line">
+          <button class="btn no" id="rp-send" type="button" data-i="send">Envoyer le signalement</button>
+          <button class="btn sec" id="rp-cancel" type="button" data-i="x">Annuler</button>
+        </div>
+        <p id="rp-msg" class="note"></p>
       </div>
       <div id="callbar" class="hidden">
         <div class="row" id="callrow"></div>
@@ -133,8 +160,9 @@
   var me = null, currentConv = null, channel = null, shown = {};
 
   function say(t, ok) { var e = $("info"); e.textContent = t || ""; e.className = ok ? "ok" : "err"; }
-  function nice(m) {
-    m = (m || "").toLowerCase();
+  function nice(raw) {
+    var m = (raw || "").toLowerCase();
+    if (m.indexOf("suspendu") > -1 || m.indexOf("banni") > -1) return raw;
     if (m.indexOf("attente") > -1) return "Ton compte doit d'abord être accepté par l'équipe.";
     if (m.indexOf("rate") > -1 || m.indexOf("trop") > -1) return "Trop de messages d'un coup. Attends une minute.";
     if (m.indexOf("friends") > -1 || m.indexOf("ami") > -1) return "Cette personne accepte seulement les messages de ses amis.";
@@ -251,7 +279,13 @@
   function addBubble(m) {
     if (shown[m.id]) return; shown[m.id] = 1;
     var b = el("div", "b" + (m.sender_id === me ? " me" : ""), m.body);
-    b.appendChild(el("small", null, hhmm(m.created_at)));
+    var sm = el("small", null, hhmm(m.created_at));
+    if (m.sender_id !== me) {
+      var rb = el("button", "rep", "Signaler"); rb.type = "button";
+      rb.onclick = function () { openReport(m.id, m.body); };
+      sm.appendChild(rb);
+    }
+    b.appendChild(sm);
     var box = $("bubbles"); box.appendChild(b); box.scrollTop = box.scrollHeight;
   }
   /* ---------- WhatsApp et appels (numéro partagé volontairement) ---------- */
@@ -295,8 +329,40 @@
     });
   }
 
+  /* ---------- Signalement ---------- */
+  var reportMsg = null;
+  function openReport(msgId, body) {
+    if (!currentOther) return;
+    reportMsg = msgId || null;
+    $("rp-quote").textContent = body ? "Message : « " + String(body).slice(0, 120) + " »" : "Signaler ce membre (sans message précis).";
+    $("rp-details").value = ""; $("rp-msg").textContent = ""; $("rp-msg").className = "note";
+    $("rp-send").disabled = false;
+    $("rpbox").className = "";
+    $("rpbox").scrollIntoView({ behavior: "smooth", block: "nearest" });
+  }
+  function closeReport() { $("rpbox").className = "hidden"; reportMsg = null; }
+  $("rp-user").onclick = function () { openReport(null, ""); };
+  $("rp-cancel").onclick = closeReport;
+  $("rp-send").onclick = function () {
+    if (!currentOther) return;
+    $("rp-send").disabled = true;
+    db.rpc("submit_report", { p_target: currentOther, p_message: reportMsg, p_reason: $("rp-reason").value, p_details: $("rp-details").value.trim() || null }).then(function (r) {
+      var out = $("rp-msg");
+      if (r.error) {
+        var m = (r.error.message || "").toLowerCase();
+        out.textContent = m.indexOf("deja signale") > -1 ? "Tu as déjà signalé ceci. L'équipe va regarder."
+          : m.indexOf("trop de signalements") > -1 ? "Trop de signalements aujourd'hui. Réessaie demain."
+          : m.indexOf("suspendu") > -1 || m.indexOf("banni") > -1 ? r.error.message
+          : "Impossible d'envoyer le signalement pour le moment.";
+        out.className = "note err"; $("rp-send").disabled = false; return;
+      }
+      out.textContent = "Merci. L'équipe a reçu ton signalement."; out.className = "note ok";
+      setTimeout(closeReport, 1800);
+    });
+  };
+
   function openChat(convId, name, otherId) {
-    currentConv = convId; shown = {}; currentOther = otherId || null;
+    currentConv = convId; shown = {}; currentOther = otherId || null; closeReport();
     $("list-view").className = "hidden"; $("chat").className = "";
     $("chat-name").textContent = name; $("bubbles").textContent = "";
     loadCallBar();
@@ -313,7 +379,7 @@
   }
   $("back").onclick = function () {
     if (channel) { db.removeChannel(channel); channel = null; }
-    currentConv = null; currentOther = null; $("callbar").className = "hidden"; $("chat").className = "hidden"; $("list-view").className = ""; tab("conv"); loadConvs();
+    currentConv = null; currentOther = null; closeReport(); $("callbar").className = "hidden"; $("chat").className = "hidden"; $("list-view").className = ""; tab("conv"); loadConvs();
   };
   $("send").onsubmit = function (e) {
     e.preventDefault();
