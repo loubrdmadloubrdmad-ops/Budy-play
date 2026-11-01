@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sécurité du compte - Budy Play</title>
+<style>
+  :root { --bg:#0b0b0c; --card:#161718; --line:#26282a; --neon:#39ff14; --text:#fff; --muted:#9a9ea3; --err:#ff5a5a; }
+  * { box-sizing:border-box; margin:0; padding:0; }
+  body { background:var(--bg); color:var(--text); font-family:system-ui,sans-serif; line-height:1.45; }
+  header { padding:16px; border-bottom:1px solid var(--line); display:flex; justify-content:space-between; align-items:center; }
+  header a { color:var(--text); text-decoration:none; font-size:1.4rem; font-weight:800; }
+  header a span { color:var(--neon); }
+  header a.s { font-size:.95rem; font-weight:600; color:var(--muted); }
+  main { max-width:520px; margin:0 auto; padding:16px 16px 40px; }
+  h1 { font-size:1.5rem; margin-bottom:6px; }
+  h2 { font-size:1.1rem; margin-bottom:8px; }
+  .sub { color:var(--muted); font-size:.9rem; margin-bottom:12px; }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:12px; padding:14px; margin-bottom:14px; }
+  .btn { padding:11px 14px; border:0; border-radius:10px; background:var(--neon); color:#000; font-weight:700; font-size:.95rem; text-decoration:none; display:inline-block; cursor:pointer; }
+  .btn.alt { background:transparent; color:var(--text); border:1px solid var(--line); }
+  .btn:disabled { opacity:.5; }
+  .hidden { display:none; }
+  .row { display:flex; gap:8px; flex-wrap:wrap; margin-top:10px; }
+  input { width:100%; padding:12px; border-radius:10px; border:1px solid var(--line); background:#0b0b0c; color:var(--text); font-size:1.3rem; letter-spacing:.3em; text-align:center; }
+  input:focus { outline:none; border-color:var(--neon); }
+  .secret { word-break:break-all; font-family:monospace; font-size:1rem; background:#0b0b0c; border:1px solid var(--line); border-radius:10px; padding:10px; margin:8px 0; user-select:all; }
+  #qr { display:block; width:200px; height:200px; margin:10px auto; background:#fff; border-radius:8px; padding:6px; }
+  #msg { margin-top:10px; font-size:.9rem; min-height:1.2em; }
+  #msg.ok { color:var(--neon); } #msg.err { color:var(--err); }
+  ol { padding-left:20px; color:var(--text); } li { margin-bottom:6px; }
+  .state { font-weight:700; }
+  .on { color:var(--neon); } .off { color:var(--err); }
+</style>
+</head>
+<body>
+<header><a href="index.html">Budy <span>Play</span></a><a class="s" href="compte.html">Compte</a></header>
+<main>
+  <div id="guest" class="hidden card">
+    <h1>Sécurité du compte</h1>
+    <p>Connecte-toi d'abord.</p>
+    <p class="row"><a class="btn" href="compte.html">Se connecter</a></p>
+  </div>
+
+  <div id="app" class="hidden">
+    <h1>Sécurité du compte</h1>
+    <p class="sub">La double vérification (2FA) ajoute un code à 6 chiffres qui change toutes les 30 secondes. Même si quelqu'un connaît ton mot de passe, il ne peut pas entrer sans ce code.</p>
+
+    <div class="card">
+      <h2>Double vérification</h2>
+      <p>État : <span class="state" id="state">...</span></p>
+      <p class="row"><button class="btn" id="start" type="button">Activer la double vérification</button>
+      <button class="btn alt hidden" id="remove" type="button">Désactiver</button></p>
+    </div>
+
+    <div class="card hidden" id="setup">
+      <h2>Étape 1 : installe une application de codes</h2>
+      <p class="sub">Gratuite : Google Authenticator, Microsoft Authenticator ou Aegis. Installe-la depuis le Play Store.</p>
+      <h2>Étape 2 : ajoute Budy Play dedans</h2>
+      <p class="sub">Si tu es sur le même téléphone, appuie sur le bouton ci-dessous. Sinon, scanne le QR code avec un autre téléphone, ou copie la clé à la main.</p>
+      <p class="row"><a class="btn" id="open" href="#">Ouvrir mon application de codes</a></p>
+      <img id="qr" alt="QR code à scanner" class="hidden">
+      <p class="sub" style="margin-top:8px">Clé à copier si le bouton ne marche pas (garde-la secrète) :</p>
+      <div class="secret" id="secret"></div>
+      <h2 style="margin-top:12px">Étape 3 : écris le code à 6 chiffres</h2>
+      <input id="code" inputmode="numeric" autocomplete="one-time-code" maxlength="6" placeholder="000000" aria-label="Code à 6 chiffres">
+      <p class="row"><button class="btn" id="verify" type="button">Confirmer</button>
+      <button class="btn alt" id="cancel" type="button">Annuler</button></p>
+    </div>
+
+    <p id="msg"></p>
+    <p class="sub">Important : si tu perds ton téléphone, tu ne pourras plus entrer avec ce compte. Garde ta clé de secours en lieu sûr, ou installe l'application de codes sur deux appareils.</p>
+  </div>
+</main>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="config.js"></script>
+<script>
+(function () {
+  var cfg = window.BUDY_CONFIG || {};
+  var $ = function (id) { return document.getElementById(id); };
+  var db = window.supabase.createClient(cfg.SUPABASE_URL, cfg.SUPABASE_KEY);
+  var pending = null; /* { id } : facteur créé mais pas encore confirmé */
+  var verifiedId = null;
+
+  function say(t, cls) { var m = $("msg"); m.textContent = t || ""; m.className = cls || ""; }
+  function msgOf(e) {
+    var m = ((e && e.message) || "").toLowerCase();
+    if (m.indexOf("invalid") > -1 || m.indexOf("code") > -1) return "Code incorrect ou expiré. Écris le code qui s'affiche maintenant dans ton application.";
+    if (m.indexOf("aal2") > -1 || m.indexOf("assurance") > -1) return "Pour désactiver, tu dois d'abord te reconnecter avec ton code.";
+    return "Une erreur est survenue. Réessaie.";
+  }
+  async function dropUnverified() {
+    var l = await db.auth.mfa.listFactors();
+    var all = (l.data && l.data.all) || [];
+    for (var i = 0; i < all.length; i++) {
+      if (all[i].factor_type === "totp" && all[i].status !== "verified") { await db.auth.mfa.unenroll({ factorId: all[i].id }); }
+    }
+  }
+  async function refresh() {
+    var l = await db.auth.mfa.listFactors();
+    var t = (l.data && l.data.totp) || [];
+    verifiedId = t.length ? t[0].id : null;
+    var on = !!verifiedId;
+    $("state").textContent = on ? "Activée" : "Pas activée";
+    $("state").className = "state " + (on ? "on" : "off");
+    $("start").className = on ? "btn hidden" : "btn";
+    $("remove").className = on ? "btn alt" : "btn alt hidden";
+  }
+  function closeSetup() { pending = null; $("setup").className = "card hidden"; $("code").value = ""; $("secret").textContent = ""; $("qr").removeAttribute("src"); $("qr").className = "hidden"; }
+
+  $("start").onclick = async function () {
+    say(""); $("start").disabled = true;
+    try {
+      await dropUnverified();
+      var r = await db.auth.mfa.enroll({ factorType: "totp", friendlyName: "Budy Play " + Date.now() });
+      if (r.error) throw r.error;
+      pending = { id: r.data.id };
+      var t = r.data.totp || {};
+      $("secret").textContent = t.secret || "";
+      if (t.qr_code && /^data:image\/svg\+xml/i.test(t.qr_code)) { $("qr").src = t.qr_code; $("qr").className = ""; }
+      var uri = t.uri || "";
+      $("open").href = /^otpauth:\/\//i.test(uri) ? uri : "#";
+      $("setup").className = "card";
+      $("setup").scrollIntoView({ behavior: "smooth", block: "nearest" });
+    } catch (e) { say("Impossible de démarrer pour le moment. Réessaie.", "err"); }
+    $("start").disabled = false;
+  };
+  $("cancel").onclick = async function () { closeSetup(); await dropUnverified(); say(""); };
+  $("verify").onclick = async function () {
+    var code = $("code").value.replace(/\s/g, "");
+    if (!/^[0-9]{6}$/.test(code)) { say("Écris les 6 chiffres affichés dans ton application.", "err"); return; }
+    if (!pending) { say("Appuie d'abord sur « Activer ».", "err"); return; }
+    $("verify").disabled = true;
+    try {
+      var r = await db.auth.mfa.challengeAndVerify({ factorId: pending.id, code: code });
+      if (r.error) throw r.error;
+      closeSetup(); await refresh();
+      say("Double vérification activée. À ta prochaine connexion, ton code te sera demandé.", "ok");
+    } catch (e) { say(msgOf(e), "err"); }
+    $("verify").disabled = false;
+  };
+  $("remove").onclick = async function () {
+    if (!verifiedId) return;
+    if (!window.confirm("Désactiver la double vérification ? Ton compte sera moins protégé.")) return;
+    var r = await db.auth.mfa.unenroll({ factorId: verifiedId });
+    if (r.error) { say(msgOf(r.error), "err"); return; }
+    await refresh(); say("Double vérification désactivée.", "ok");
+  };
+
+  db.auth.getSession().then(async function (s) {
+    if (!(s.data && s.data.session)) { $("guest").className = "card"; return; }
+    $("app").className = "";
+    await refresh();
+  });
+})();
+</script>
+</body>
+</html>
