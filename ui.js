@@ -181,4 +181,10 @@
 
   window.addEventListener("pagehide", stop);
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", build); else build();
-})();/
+})();
+(function () {
+  if (window.BudyFond) return;
+  var s = document.createElement('script');
+  s.src = 'fonds.js';
+  document.head.appendChild(s);
+})();
