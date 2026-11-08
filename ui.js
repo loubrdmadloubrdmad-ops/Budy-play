@@ -188,3 +188,8 @@
   s.src = 'fonds.js';
   document.head.appendChild(s);
 })();
+(function () {
+  var s = document.createElement('script');
+  s.src = 'deplacer.js';
+  document.head.appendChild(s);
+})();
