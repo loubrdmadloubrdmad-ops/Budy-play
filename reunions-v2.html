@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Réunions - Budy Play</title>
+<style>
+  :root { --bg:#0b0b0c; --card:#161718; --line:#26282a; --neon:#39ff14; --text:#fff; --muted:#9a9ea3; --err:#ff5a5a; }
+  * { box-sizing:border-box; margin:0; padding:0; }
+  body { background:var(--bg); color:var(--text); font-family:system-ui,sans-serif; line-height:1.4; }
+  header { padding:16px; border-bottom:1px solid var(--line); display:flex; justify-content:space-between; align-items:center; }
+  header a { color:var(--text); text-decoration:none; font-size:1.4rem; font-weight:800; }
+  header a span { color:var(--neon); }
+  header a.s { font-size:.95rem; font-weight:600; color:var(--muted); }
+  main { max-width:560px; margin:0 auto; padding:16px 16px 40px; }
+  h1 { font-size:1.5rem; margin-bottom:4px; }
+  p.lead { color:var(--muted); font-size:.92rem; margin-bottom:12px; }
+  h2 { font-size:1.05rem; margin-bottom:10px; color:var(--neon); }
+  .tabs { display:flex; gap:8px; margin-bottom:12px; }
+  .tab { flex:1; padding:11px; border-radius:10px; border:1px solid var(--line); background:transparent; color:var(--text); font-size:.95rem; font-weight:700; }
+  .tab.on { border-color:var(--neon); color:var(--neon); }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:12px; padding:14px; margin-bottom:12px; }
+  .top { display:flex; justify-content:space-between; gap:10px; align-items:flex-start; }
+  .title { font-weight:800; font-size:1.05rem; overflow-wrap:anywhere; }
+  .sub { color:var(--muted); font-size:.88rem; margin-top:2px; }
+  .when { color:var(--neon); font-size:.92rem; font-weight:700; margin-top:4px; }
+  .desc { margin-top:8px; font-size:.95rem; white-space:pre-wrap; overflow-wrap:anywhere; }
+  .tag { font-size:.75rem; border:1px solid var(--line); border-radius:99px; padding:2px 8px; color:var(--muted); white-space:nowrap; }
+  .tag.g { color:var(--neon); border-color:var(--neon); }
+  .acts { display:flex; gap:8px; margin-top:10px; flex-wrap:wrap; align-items:center; }
+  .btn { padding:10px 14px; border:0; border-radius:10px; background:var(--neon); color:#000; font-weight:700; font-size:.95rem; text-decoration:none; display:inline-block; }
+  .btn.sec { background:transparent; border:1px solid var(--line); color:var(--text); }
+  .btn.no { background:transparent; border:1px solid var(--err); color:var(--err); }
+  .btn:disabled { opacity:.5; }
+  label { display:block; margin:10px 0 4px; color:var(--muted); font-size:.9rem; }
+  input, select, textarea { width:100%; padding:11px; border-radius:10px; border:1px solid var(--line); background:#0b0b0c; color:var(--text); font-size:1rem; font-family:inherit; }
+  textarea { min-height:70px; resize:vertical; }
+  input:focus, select:focus, textarea:focus { outline:none; border-color:var(--neon); }
+  .msg { min-height:1.2em; margin:6px 0 10px; font-size:.95rem; }
+  .err { color:var(--err); } .ok { color:var(--neon); }
+  .empty { color:var(--muted); padding:6px 0; }
+  .hidden { display:none; }
+</style>
+</head>
+<body>
+<header><a href="index.html">Budy <span>Play</span></a><a class="s" href="compte.html">Compte</a></header>
+<main>
+  <h1>Réunions</h1>
+  <p class="lead">Lives TikTok, compétitions et rendez-vous pour jouer ensemble.</p>
+  <p class="msg" id="msg"></p>
+
+  <div class="tabs">
+    <button class="tab on" id="t-official" type="button">Officiel</button>
+    <button class="tab" id="t-community" type="button">Communauté</button>
+  </div>
+
+  <div id="create-box" class="card hidden">
+    <h2 id="c-head">Créer un événement</h2>
+    <div id="c-cat-wrap">
+      <label for="c-cat">Type</label>
+      <select id="c-cat">
+        <option value="live">Live TikTok</option>
+        <option value="competition">Compétition</option>
+        <option value="autre">Autre</option>
+      </select>
+    </div>
+    <label for="c-title">Titre (3 à 80 caractères)</label>
+    <input id="c-title" maxlength="80">
+    <label for="c-game">Jeu</label>
+    <select id="c-game">
+      <option>Free Fire</option><option>Fortnite</option><option>Roblox</option>
+      <option>Minecraft</option><option>EA SPORTS FC</option><option>Flex City</option><option>One State</option>
+      <option>Autre</option>
+    </select>
+    <label for="c-desc">Description (400 caractères max)</label>
+    <textarea id="c-desc" maxlength="400"></textarea>
+    <label for="c-date">Date et heure</label>
+    <input id="c-date" type="datetime-local">
+    <label for="c-link">Lien (facultatif, doit commencer par https://)</label>
+    <input id="c-link" type="url" inputmode="url" maxlength="250" placeholder="https://">
+    <label for="c-max">Nombre de places maximum (facultatif)</label>
+    <input id="c-max" type="number" inputmode="numeric" min="2" max="1000">
+    <div class="acts"><button class="btn" id="c-save" type="button">Publier</button></div>
+  </div>
+
+  <div id="list"><p class="empty">Chargement...</p></div>
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="config.js"></script>
+<script>
+(function () {
+  var cfg = window.BUDY_CONFIG || {};
+  var $ = function (id) { return document.getElementById(id); };
+  var db = window.supabase.createClient(cfg.SUPABASE_URL, cfg.SUPABASE_KEY);
+  var CAT = { live: "Live TikTok", competition: "Compétition", jeu: "Jouer ensemble", autre: "Autre" };
+  var me = { logged: false, approved: false, staff: false };
+  var tab = "official";
+  var rows = [];
+
+  function el(tag, cls, txt) { var e = document.createElement(tag); if (cls) e.className = cls; if (txt != null) e.textContent = txt; return e; }
+  function say(t, ok) { $("msg").textContent = t || ""; $("msg").className = "msg " + (ok ? "ok" : "err"); }
+  function when(d) { try { return new Date(d).toLocaleString("fr-FR", { weekday: "long", day: "numeric", month: "long", hour: "2-digit", minute: "2-digit" }); } catch (e) { return ""; } }
+  function nice(m) {
+    m = (m || "").toLowerCase();
+    if (m.indexOf("attente") > -1) return "Ton compte doit d'abord être accepté par l'équipe.";
+    if (m.indexOf("complet") > -1) return "Cet événement est complet.";
+    if (m.indexOf("termine") > -1) return "Cet événement est terminé.";
+    if (m.indexOf("maximum") > -1) return "Tu as déjà 3 rendez-vous à venir. Supprime-en un d'abord.";
+    if (m.indexOf("futur") > -1) return "Choisis une date et une heure dans le futur.";
+    if (m.indexOf("equipe") > -1) return "Cette partie est réservée à l'équipe.";
+    if (m.indexOf("connexion") > -1) return "Connecte-toi d'abord.";
+    return "Action refusée ou impossible pour le moment.";
+  }
+
+  function act(promise, okText) {
+    return promise.then(function (r) {
+      if (r.error) { say(nice(r.error.message)); return false; }
+      if (okText) say(okText, true);
+      load(); return true;
+    });
+  }
+
+  function setTab(t) {
+    tab = t;
+    $("t-official").className = "tab" + (t === "official" ? " on" : "");
+    $("t-community").className = "tab" + (t === "community" ? " on" : "");
+    var canCreate = me.approved && (t === "community" || me.staff);
+    $("create-box").className = "card" + (canCreate ? "" : " hidden");
+    $("c-cat-wrap").className = t === "official" ? "" : "hidden";
+    $("c-head").textContent = t === "official" ? "Créer un événement officiel" : "Proposer un rendez-vous pour jouer";
+    render();
+  }
+
+  function render() {
+    var box = $("list"); box.textContent = "";
+    var list = rows.filter(function (e) { return e.kind === tab; });
+    if (!me.logged) {
+      var p = el("p", "empty", "Connecte-toi pour voir les réunions. ");
+      var a = el("a", "btn", "Se connecter"); a.href = "compte.html";
+      box.appendChild(p); box.appendChild(a); return;
+    }
+    if (!me.approved) { box.appendChild(el("p", "empty", "Ton compte doit être accepté par l'équipe pour voir les réunions.")); return; }
+    if (!list.length) {
+      box.appendChild(el("p", "empty", tab === "official" ? "Aucun événement officiel pour le moment." : "Aucun rendez-vous proposé pour le moment. Sois le premier !"));
+      return;
+    }
+    list.forEach(function (e) {
+      var card = el("div", "card");
+      var top = el("div", "top");
+      var left = el("div");
+      left.appendChild(el("div", "title", e.title));
+      left.appendChild(el("div", "when", when(e.starts_at)));
+      var sub = (e.game || "") + (e.kind === "community" && e.creator ? " · proposé par " + e.creator : "");
+      if (sub) left.appendChild(el("div", "sub", sub));
+      left.appendChild(el("div", "sub", e.participants + (e.max_participants ? " / " + e.max_participants : "") + " participant(s)"));
+      top.appendChild(left);
+      top.appendChild(el("span", "tag g", CAT[e.category] || "Événement"));
+      card.appendChild(top);
+      if (e.description) card.appendChild(el("div", "desc", e.description));
+
+      var acts = el("div", "acts");
+      if (e.link) { var l = el("a", "btn sec", "Ouvrir le lien"); l.href = e.link; l.target = "_blank"; l.rel = "noopener noreferrer"; acts.appendChild(l); }
+      if (e.joined) {
+        acts.appendChild(el("span", "tag g", "Tu participes"));
+        if (!e.mine) {
+          var q = el("button", "btn no", "Me retirer"); q.type = "button";
+          q.onclick = function () { act(db.rpc("leave_event", { p_id: e.id }).then(function (r) { return r; }), "Tu es retiré."); };
+          acts.appendChild(q);
+        }
+      } else {
+        var j = el("button", "btn", "Je participe"); j.type = "button";
+        j.onclick = function () { j.disabled = true; act(db.rpc("join_event", { p_id: e.id }).then(function (r) { return r; }), "C'est noté, tu participes.").then(function () { j.disabled = false; }); };
+        acts.appendChild(j);
+      }
+      if (e.can_delete) {
+        var d = el("button", "btn no", "Supprimer"); d.type = "button";
+        d.onclick = function () {
+          if (!window.confirm("Supprimer cet événement ?")) return;
+          act(db.rpc("delete_event", { p_id: e.id }).then(function (r) { return r; }), "Événement supprimé.");
+        };
+        acts.appendChild(d);
+      }
+      card.appendChild(acts);
+      box.appendChild(card);
+    });
+  }
+
+  function load() {
+    if (!me.approved) { render(); return; }
+    db.rpc("events_list").then(function (r) {
+      if (r.error) { $("list").textContent = ""; $("list").appendChild(el("p", "empty", "Impossible de charger les réunions.")); return; }
+      rows = r.data || [];
+      render();
+    });
+  }
+
+  $("t-official").onclick = function () { setTab("official"); };
+  $("t-community").onclick = function () { setTab("community"); };
+
+  $("c-save").onclick = function () {
+    var title = $("c-title").value.trim();
+    if (title.length < 3) { say("Le titre doit avoir au moins 3 caractères."); return; }
+    var d = $("c-date").value;
+    if (!d) { say("Choisis la date et l'heure."); return; }
+    var link = $("c-link").value.trim();
+    if (link && link.indexOf("https://") !== 0) { say("Le lien doit commencer par https://"); return; }
+    var mx = parseInt($("c-max").value, 10);
+    $("c-save").disabled = true;
+    db.rpc("create_event", {
+      p_kind: tab,
+      p_category: tab === "official" ? $("c-cat").value : "jeu",
+      p_title: title,
+      p_game: $("c-game").value,
+      p_description: $("c-desc").value.trim(),
+      p_starts_at: new Date(d).toISOString(),
+      p_link: link || null,
+      p_max: mx >= 2 ? mx : null
+    }).then(function (r) {
+      $("c-save").disabled = false;
+      if (r.error) { say(nice(r.error.message)); return; }
+      say("Publié.", true);
+      $("c-title").value = ""; $("c-desc").value = ""; $("c-date").value = ""; $("c-link").value = ""; $("c-max").value = "";
+      load();
+    });
+  };
+
+  db.auth.getSession().then(function (s) {
+    var sess = s.data && s.data.session;
+    if (!sess) { setTab("official"); return; }
+    me.logged = true;
+    db.from("profiles").select("role,status").eq("id", sess.user.id).maybeSingle().then(function (r) {
+      var p = r.data || {};
+      me.approved = p.status === "approved";
+      me.staff = me.approved && (p.role === "founder" || p.role === "moderator");
+      if (!me.approved) say("Ton compte doit être accepté par l'équipe pour voir les réunions.");
+      setTab("official");
+      load();
+    });
+  });
+})();
+</script>
+<script src="ui.js"></script>
+<script src="fonds.js"></script>
+</body>
+  </html>
