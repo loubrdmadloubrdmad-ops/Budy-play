@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sensibilité Free Fire - Budy Play</title>
+<style>
+  :root { --bg:#0b0b0c; --card:#161718; --line:#26282a; --neon:#39ff14; --text:#fff; --muted:#9a9ea3; --err:#ff5a5a; }
+  * { box-sizing:border-box; margin:0; padding:0; }
+  body { background:var(--bg); color:var(--text); font-family:system-ui,sans-serif; line-height:1.4; }
+  header { padding:16px; border-bottom:1px solid var(--line); display:flex; justify-content:space-between; align-items:center; }
+  header a { color:var(--text); text-decoration:none; font-size:1.4rem; font-weight:800; }
+  header a span { color:var(--neon); }
+  header a.s { font-size:.95rem; font-weight:600; color:var(--muted); }
+  main { max-width:560px; margin:0 auto; padding:16px 16px 40px; }
+  h1 { font-size:1.5rem; margin-bottom:4px; }
+  p.lead { color:var(--muted); font-size:.92rem; margin-bottom:12px; }
+  h2 { font-size:1.05rem; margin-bottom:10px; color:var(--neon); }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:12px; padding:14px; margin-bottom:12px; }
+  label { display:block; margin:10px 0 4px; color:var(--muted); font-size:.9rem; }
+  input, select { width:100%; padding:11px; border-radius:10px; border:1px solid var(--line); background:#0b0b0c; color:var(--text); font-size:1rem; font-family:inherit; }
+  input:focus, select:focus { outline:none; border-color:var(--neon); }
+  .btn { margin-top:14px; width:100%; padding:13px; border:0; border-radius:10px; background:var(--neon); color:#000; font-weight:800; font-size:1rem; text-decoration:none; display:block; text-align:center; }
+  .btn:disabled { opacity:.5; }
+  .msg { min-height:1.2em; margin:6px 0 10px; font-size:.95rem; }
+  .err { color:var(--err); } .ok { color:var(--neon); }
+  .res { white-space:pre-wrap; font-size:1.02rem; line-height:1.7; overflow-wrap:anywhere; }
+  .note { color:var(--muted); font-size:.85rem; margin-top:8px; }
+  .tips { color:var(--muted); font-size:.92rem; padding-left:18px; }
+  .tips li { margin-bottom:6px; }
+  .hidden { display:none; }
+</style>
+</head>
+<body>
+<header><a href="index.html">Budy <span>Play</span></a><a class="s" href="compte.html">Compte</a></header>
+<main>
+  <h1>Sensibilité Free Fire</h1>
+  <p class="lead">L'IA te propose des réglages de départ selon ton téléphone et ta façon de jouer.</p>
+  <p class="msg" id="msg"></p>
+
+  <div id="guest" class="card hidden">
+    <p>Connecte-toi pour utiliser cette page.</p>
+    <a class="btn" href="compte.html">Se connecter</a>
+  </div>
+  <div id="waiting" class="card hidden">
+    <p>Ton compte doit d'abord être accepté par l'équipe.</p>
+  </div>
+
+  <div id="app" class="hidden">
+    <form id="form" class="card">
+      <h2>Ton profil de joueur</h2>
+      <label for="phone">Modèle de ton téléphone (facultatif)</label>
+      <input id="phone" maxlength="30" placeholder="Exemple : Tecno Spark 10">
+      <label for="fingers">Nombre de doigts</label>
+      <select id="fingers">
+        <option value="2">2 doigts</option>
+        <option value="3" selected>3 doigts</option>
+        <option value="4">4 doigts</option>
+      </select>
+      <label for="style">Ton style de jeu</label>
+      <select id="style">
+        <option value="rusher">Rusher (combats rapprochés)</option>
+        <option value="equilibre" selected>Équilibré</option>
+        <option value="sniper">Sniper (longue distance)</option>
+      </select>
+      <label for="prob">Ce qui ne va pas</label>
+      <select id="prob">
+        <option value="rien">Rien de précis, je commence</option>
+        <option value="trop rapide">La visée est trop rapide</option>
+        <option value="trop lente">La visée est trop lente</option>
+        <option value="tremble">La visée tremble ou dépasse la cible</option>
+      </select>
+      <button class="btn" id="go" type="submit">Obtenir mes réglages</button>
+      <p class="note" id="quota"></p>
+    </form>
+
+    <div id="result" class="card hidden">
+      <h2>Tes réglages de départ (0 à 100)</h2>
+      <div class="res" id="res"></div>
+    </div>
+
+    <div class="card">
+      <h2>Comment les tester</h2>
+      <ul class="tips">
+        <li>Ce sont des valeurs de <b>départ</b> : chaque écran et chaque main sont différents. L'IA peut se tromper.</li>
+        <li>Va en entraînement et tire sur une cible fixe, puis sur une cible qui bouge.</li>
+        <li>Change une seule valeur à la fois, de 5 en 5.</li>
+        <li>Note les réglages qui te plaisent pour les retrouver.</li>
+      </ul>
+    </div>
+  </div>
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="config.js"></script>
+<script>
+(function () {
+  var cfg = window.BUDY_CONFIG || {};
+  var $ = function (id) { return document.getElementById(id); };
+  var db = window.supabase.createClient(cfg.SUPABASE_URL, cfg.SUPABASE_KEY);
+
+  function say(t, ok) { $("msg").textContent = t || ""; $("msg").className = "msg " + (ok ? "ok" : "err"); }
+  function quota(used, limit) { $("quota").textContent = limit ? "Questions aujourd'hui : " + used + " / " + limit : ""; }
+  function loadQuota() { db.rpc("ai_quota").then(function (r) { if (!r.error && r.data) quota(r.data.used, r.data.limit); }); }
+  function errText(err) {
+    var ctx = err && err.context;
+    if (ctx && typeof ctx.json === "function") {
+      return ctx.json().then(function (j) { return (j && j.error) || "L'assistant ne répond pas pour le moment."; })
+        .catch(function () { return "L'assistant ne répond pas pour le moment."; });
+    }
+    return Promise.resolve("L'assistant ne répond pas pour le moment.");
+  }
+  function clean(s) { return (s || "").replace(/[^A-Za-z0-9 .+\-]/g, "").trim().slice(0, 30); }
+
+  function buildMessage() {
+    var phone = clean($("phone").value);
+    var m = "Conseille-moi une sensibilité Free Fire (échelle 0 à 100). " +
+      (phone ? "Téléphone : " + phone + ". " : "") +
+      "Je joue avec " + $("fingers").value + " doigts. Style : " + $("style").value + ". Problème : " + $("prob").value + ". " +
+      "Réponds par 6 lignes courtes au format Nom : valeur, pour Général, Point rouge, Viseur 2x, Viseur 4x, Sniper AWM, Vue libre. " +
+      "Termine par une phrase disant que ce sont des valeurs de départ à tester.";
+    return m;
+  }
+
+  $("form").onsubmit = function (e) {
+    e.preventDefault();
+    say("");
+    $("go").disabled = true; $("go").textContent = "L'IA réfléchit...";
+    db.functions.invoke("assistant-ia", { body: { messages: [{ role: "user", content: buildMessage() }] } }).then(function (r) {
+      if (r.error || !r.data || !r.data.reply) {
+        return errText(r.error).then(function (m) { say(m); loadQuota(); });
+      }
+      $("res").textContent = r.data.reply;
+      $("result").className = "card";
+      quota(r.data.used, r.data.limit);
+      $("result").scrollIntoView({ behavior: "smooth", block: "start" });
+    }).catch(function () {
+      say("Pas de connexion. Réessaie.");
+    }).then(function () { $("go").disabled = false; $("go").textContent = "Obtenir mes réglages"; });
+  };
+
+  db.auth.getSession().then(function (s) {
+    var sess = s.data && s.data.session;
+    if (!sess) { $("guest").className = "card"; return; }
+    db.rpc("my_status").then(function (st) {
+      if (st.data !== "approved") { $("waiting").className = "card"; return; }
+      $("app").className = "";
+      loadQuota();
+    });
+  });
+})();
+</script>
+<script src="ui.js"></script>
+<script src="fonds.js"></script>
+</body>
+</html>￼Enter
