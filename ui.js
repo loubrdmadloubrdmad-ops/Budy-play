@@ -193,3 +193,9 @@
   s.src = 'deplacer.js';
   document.head.appendChild(s);
 })();
+(function () {
+  var s = document.createElement('script');
+  s.src = 'accueil-plus.js';
+  document.head.appendChild(s);
+})();
+// fin
