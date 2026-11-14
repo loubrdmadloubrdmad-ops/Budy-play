@@ -195,7 +195,7 @@
 })();
 (function () {
   var s = document.createElement('script');
-  s.src = 'accueil-plus.js';
+  s.src = 'accueil-plus2.js';
   document.head.appendChild(s);
 })();
 // fin
